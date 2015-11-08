@@ -5,7 +5,7 @@ import urwid
 import collections
 import logging
 
-logging.basicConfig(filename='todotxt_machine.log', level=logging.INFO)
+logging.basicConfig(filename='~/.todotxt_machine.log', level=logging.INFO)
 
 log = logging.getLogger()
 
@@ -328,7 +328,7 @@ def handle_keypress(widget, key, context):
 
     if not handler:
         return False
-    log.info('running %s %s', handler, kwargs)
+    log.debug('running %s %s', handler, kwargs)
     getattr(widget, handler)(**kwargs)
     return True
 
@@ -430,7 +430,6 @@ class UrwidUI(object):
         if sort['key'] is None:
             self.todos.sorted_raw()
         else:
-            log.info(str(list(sort['key'](x) for x in self.todos.todo_items)))
             self.todos.sorted(key=sort['key'])
         self.reload_todos_from_memory()
         self.move_selection_top()
@@ -684,7 +683,6 @@ class UrwidUI(object):
             self.searching = True
 
             for t in self.todos.search(search_string, invert=invert):
-                log.info('found %s', t)
                 self.listbox.body.append(TodoWidget(t, self.key_bindings, self.colorscheme, self, wrapping=self.wrapping[0], border=self.border[0]))
 
     def start_search(self):
@@ -727,7 +725,6 @@ class UrwidUI(object):
     def format_tooltip(self, name):
         key_column_width = 12
         data = self.key_bindings.key_bindings[name]
-        log.info('%s %s', name, repr(data))
         keys = ', '.join(data['keys'])
         return '{keys} - {tooltip}'.format(keys=keys.ljust(key_column_width),
                                            tooltip=data['tooltip'])

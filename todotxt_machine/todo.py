@@ -10,6 +10,7 @@ from todotxt_machine.terminal_operations import TerminalOperations
 
 log = logging.getLogger()
 
+
 class Todo(object):
     """Single Todo item"""
 
