@@ -195,10 +195,6 @@ class UrwidUI(object):
         focus.update_todo()
         self.update_header()
 
-    def search_clear(self):
-        if self.searching:
-            self.clear_search_term()
-
     def keystroke(self, input):
         focus, focus_index = self.listbox.get_focus()
 
@@ -418,9 +414,6 @@ class UrwidUI(object):
         self.update_header()
         self.update_footer()
 
-    def clear_search_term(self, button=None):
-        self.clear_searches()
-
     def create_footer(self):
         if self.searching:
             self.search_box = SearchWidget(self, self.key_bindings, edit_text=self.search_string)
@@ -428,7 +421,7 @@ class UrwidUI(object):
                 (1, urwid.Text('/')),
                 self.search_box,
                 (16, urwid.AttrMap(
-                    urwid.Button([('header_file', 'C'), 'lear Search'], on_press=self.clear_search_term),
+                    urwid.Button([('header_file', 'C'), 'lear Search'], on_press=self.clear_searches),
                     'header', 'plain_selected'))
             ]), 'footer')
             urwid.connect_signal(self.search_box, 'change', self.search_box_updated)

@@ -13,7 +13,7 @@ class SearchWidget(urwid.Edit):
         self.parent_ui.finalize_search()
 
     def clear_search(self):
-        self.parent_ui.clear_search_term()
+        self.parent_ui.clear_searches()
 
     def keypress(self, size, key):
         if handle_keypress(self, key, 'search'):
