@@ -1,0 +1,32 @@
+key_bindings:
+  toggle-help:
+    tooltip: show / hide this help message
+    keys: ['h', '?']
+    context:
+      - handler: listbox
+        callback: toggle_help_panel
+  quit:
+    tooltip: quit and save
+    keys: q
+    context:
+      - handler: listbox
+        callback: quit
+  toggle-toolbar:
+    keys: t
+    context:
+      - handler: listbox
+        callback: toggle_toolbar
+        kwargs: {}
+  toggle-borders:
+    keys: b
+    context:
+      - handler: listbox
+        callback: toggle_border
+        kwargs: {}
+  toggle-wrapping:
+    keys: w
+    context:
+      - handler: listbox
+        callback: toggle_wrapping
+        kwargs: {}
+

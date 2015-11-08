@@ -1,10 +1,14 @@
+import os.path as op
+import yaml
+
+
 class KeyBindings:
-    user_keys    = []
-    key_bindings = {}
+    user_keys = []
 
     def __init__(self, user_keys):
         self.user_keys = user_keys
-        self.fillWithDefault();
+        self.key_bindings = {}
+        self.fill_with_defaults()
         self.fillWithUserKeys(user_keys)
 
     def fillWithUserKeys(self, users_keys):
@@ -16,49 +20,58 @@ class KeyBindings:
             except KeyError:
                 print("KeyBind \""+bind+"\" not found")
 
-    def fillWithDefault(self):
-        self.key_bindings['toggle-help']      = ['h', '?']
-        self.key_bindings['quit']             = ['q']
-        self.key_bindings['toggle-toolbar']   = ['t']
-        self.key_bindings['toggle-borders']   = ['b']
-        self.key_bindings['toggle-wrapping']  = ['w']
-        self.key_bindings['save']             = ['S']
-        self.key_bindings['reload']           = ['R']
-        self.key_bindings['down']             = ['j', 'down']
-        self.key_bindings['up']               = ['k', 'up']
-        self.key_bindings['top']              = ['g']
-        self.key_bindings['right']            = ['L', 'right']
-        self.key_bindings['left']             = ['H', 'left']
-        self.key_bindings['bottom']           = ['G']
-        self.key_bindings['change-focus']     = ['tab']
-        self.key_bindings['toggle-complete']  = ['x']
-        self.key_bindings['archive']          = ['X']
-        self.key_bindings['append']           = ['n']
-        self.key_bindings['insert-after']     = ['o']
-        self.key_bindings['insert-before']    = ['O']
-        self.key_bindings['save-item']        = ['enter']
-        self.key_bindings['edit']             = ['enter', 'A', 'e']
-        self.key_bindings['delete']           = ['D']
-        self.key_bindings['swap-down']        = ['J']
-        self.key_bindings['swap-up']          = ['K']
-        self.key_bindings['edit-complete']    = ['tab']
-        self.key_bindings['edit-save']        = ['return']
-        self.key_bindings['edit-move-left']   = ['left']
-        self.key_bindings['edit-move-right']  = ['right']
-        self.key_bindings['edit-word-left']   = ['meta b', 'ctrl b']
-        self.key_bindings['edit-word-right']  = ['meta f', 'ctrl f']
-        self.key_bindings['edit-end']         = ['ctrl e', 'end']
-        self.key_bindings['edit-home']        = ['ctrl a', 'home']
-        self.key_bindings['edit-delete-word'] = ['ctrl w']
-        self.key_bindings['edit-delete-end']  = ['ctrl k']
-        self.key_bindings['edit-delete-beginning']  = ['ctrl u']
-        self.key_bindings['edit-paste']       = ['ctrl y']
-        self.key_bindings['toggle-filter']    = ['f']
-        self.key_bindings['clear-filter']     = ['F']
-        self.key_bindings['toggle-sorting']   = ['s']
-        self.key_bindings['search']           = ['/']
-        self.key_bindings['search-end']       = ['enter']
-        self.key_bindings['search-clear']     = ['C']
+    def fill_with_defaults(self):
+        directory = op.dirname(__file__)
+        with open(op.join(directory, 'default_keys.yaml')) as f:
+            config = yaml.load(f)
+        for name, data in config['key_bindings'].iteritems():
+            if isinstance(data['keys'], basestring):
+                data['keys'] = [data['keys']]
+            self.key_bindings[name] = data
+        internal = dict()
+        internal['toggle-wrapping']  = ['w']
+        internal['save']             = ['S']
+        internal['reload']           = ['R']
+        internal['down']             = ['j', 'down']
+        internal['up']               = ['k', 'up']
+        internal['top']              = ['g']
+        internal['right']            = ['L', 'right']
+        internal['left']             = ['H', 'left']
+        internal['bottom']           = ['G']
+        internal['change-focus']     = ['tab']
+        internal['toggle-complete']  = ['x']
+        internal['archive']          = ['X']
+        internal['append']           = ['n']
+        internal['insert-after']     = ['o']
+        internal['insert-before']    = ['O']
+        internal['save-item']        = ['enter', 'esc']
+        internal['edit']             = ['enter', 'i', 'a']
+        internal['delete']           = ['d']
+        internal['swap-down']        = ['J']
+        internal['swap-up']          = ['K']
+        internal['edit-complete']    = ['tab']
+        internal['edit-save']        = ['return']
+        internal['edit-move-left']   = ['left']
+        internal['edit-move-right']  = ['right']
+        internal['edit-word-left']   = ['meta b', 'ctrl b']
+        internal['edit-word-right']  = ['meta f', 'ctrl f']
+        internal['edit-end']         = ['ctrl e', 'end']
+        internal['edit-home']        = ['ctrl a', 'home']
+        internal['edit-delete-word'] = ['ctrl w']
+        internal['edit-delete-end']  = ['ctrl k']
+        internal['edit-delete-beginning']  = ['ctrl u']
+        internal['edit-paste']       = ['ctrl y']
+        internal['toggle-filter']    = ['f']
+        internal['clear-filter']     = ['F']
+        internal['toggle-sorting']   = ['s']
+        internal['search']           = ['/']
+        internal['search-end']       = ['enter']
+        internal['search-clear']     = ['C']
+
+        for k, v in internal.iteritems():
+            self.key_bindings[k] = dict(
+                keys=v,
+            )
 
     def __getitem__(self, index):
         return ", ".join(self.key_bindings[index])
@@ -67,11 +80,23 @@ class KeyBindings:
         keys = userKey.split(',')
         return [key.strip() for key in keys]
 
-    def getKeyBinding(self, bind):
-        try:
-            return self.key_bindings[bind]
-        except KeyError:
-            return []
+    def get_key_binding(self, bind):
+        # intermediately treat either string->[key] or string->('key'->[key])
+        # as permissible
+        value = self.key_bindings.get(bind, [])
+        if isinstance(value, list):
+            return value
+        elif isinstance(value, dict):
+            return value.get('keys', [])
 
-    def is_binded_to(self, key, bind):
-        return key in self.getKeyBinding(bind)
+    def is_bound_to(self, key, bind):
+        return key in self.get_key_binding(bind)
+
+    def get_handler(self, key, context):
+        # TODO create data structure to optimize this...
+        for name, data in self.key_bindings.iteritems():
+            if key in data['keys']:
+                for context_config in data.get('context', []):
+                    if context_config['handler'] == context:
+                        return context_config['callback'], context_config.get('kwargs', {})
+        return None, {}
