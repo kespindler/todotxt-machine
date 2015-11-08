@@ -114,7 +114,7 @@ class UrwidUI(object):
         else:
             self.todos.sorted(key=sort['key'])
         self.reload_todos_from_memory()
-        self.move_selection_top()
+        self.move_selection(0)
         self.update_header()
 
     def toggle_filter_panel(self, button=None):
@@ -178,7 +178,7 @@ class UrwidUI(object):
         if self.todos.archive_done():
             self.delete_todo_widgets()
             self.reload_todos_from_memory()
-            self.move_selection_top()
+            self.move_selection(0)
             self.update_header()
 
     def reload_todos_from_file(self, button=None):
