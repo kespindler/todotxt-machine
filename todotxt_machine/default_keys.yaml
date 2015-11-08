@@ -86,9 +86,10 @@ key_bindings:
   search-end:
     tooltip: finalize search
     keys: enter
-    handler: null
+    handler: search
     callback: finalize_search
   search-clear:
+    # TODO turn into a universal filter clear
     tooltip: clear search
     keys: W
     handler: listbox
@@ -96,7 +97,7 @@ key_bindings:
   search-clear-while-editing:
     keys: esc
     handler: search
-    callback: clear_search_term
+    callback: clear_search
   search-inbox:
     tooltip: search for items without a project
     keys: I

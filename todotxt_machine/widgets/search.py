@@ -12,7 +12,10 @@ class SearchWidget(urwid.Edit):
     def search_end(self):
         self.parent_ui.finalize_search()
 
+    def clear_search(self):
+        self.parent_ui.clear_search_term()
+
     def keypress(self, size, key):
-        if self.key_bindings.is_bound_to(key, 'search-end'):
-            self.parent_ui.finalize_search()
+        if handle_keypress(self, key, 'search'):
+            return
         return super(SearchWidget, self).keypress(size, key)

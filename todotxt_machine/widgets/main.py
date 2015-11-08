@@ -397,6 +397,7 @@ class UrwidUI(object):
         self.filter_results = []
         self.update_header()
         self.update_footer()
+        # TODO this destroys any sorting we have going
         self.reload_todos_from_memory()
 
     def create_footer(self):
