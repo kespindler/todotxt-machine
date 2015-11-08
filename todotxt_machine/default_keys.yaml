@@ -117,7 +117,7 @@ key_bindings:
     handler: todo:editing
     callback: save_and_append
   mouse click:
-    keys: []
+    keys: mouse click
     handler: null
     tooltip: select any todo, checkbox or button
   down:
@@ -167,3 +167,59 @@ key_bindings:
     keys: J
     handler: listbox
     callback: swap_down
+  toggle-complete:
+    tooltip: complete / un-complete selected todo item
+    keys: x
+    handler: listbox
+    callback: toggle_complete
+  archive:
+    tooltip: archive completed todo items to done.txt (if specified)
+    keys: X
+    handler: listbox
+    callback: archive_done_todos
+  delete:
+    tooltip: delete the selected todo
+    keys: delete
+    handler: listbox
+    callback: delete_todo
+  delete:
+    tooltip: delete the selected todo
+    keys: delete
+    handlers: listbox
+    callback: delete_todo
+  append:
+    tooltip: add a new todo to the end of the list
+    keys: n
+    handler: listbox
+    callback: add_new_todo
+    kwargs: {position: append}
+  insert-after:
+    tooltip: add a todo after the selected todo (when not filtering)
+    keys: o
+    handler: listbox
+    callback: add_new_todo
+    kwargs: {position: insert_after}
+  insert-before:
+    tooltip: add a todo before the selected todo (when not filtering)
+    keys: O
+    handler: listbox
+    callback: add_new_todo
+    kwargs: {position: insert_before}
+  edit:
+    tooltip: edit the selected todo
+    keys: ['enter', 'i', 'a']
+    handler: todo
+    callback: edit_item
+  delete:
+    tooltip: delete the selected todo
+    keys: ['ctrl d']
+    handler: listbox
+    callback: delete_todo
+  edit-todo-noop:
+    keys: ['up', 'down']
+    handler: todo:editing
+    callback: noop
+  edit-complete:
+    keys: tab
+    handler: edit
+    callback: edit_complete

@@ -29,14 +29,6 @@ class KeyBindings:
                 data['keys'] = [data['keys']]
             self.key_bindings[name] = data
         internal = dict()
-        internal['toggle-complete']  = ['x']
-        internal['archive']          = ['X']
-        internal['append']           = ['n']
-        internal['insert-after']     = ['o']
-        internal['insert-before']    = ['O']
-        internal['edit']             = ['enter', 'i', 'a']
-        internal['delete']           = ['ctrl d']
-        internal['edit-complete']    = ['tab']
         internal['edit-save']        = ['return']
         internal['edit-move-left']   = ['left']
         internal['edit-move-right']  = ['right']

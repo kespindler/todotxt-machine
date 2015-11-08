@@ -90,21 +90,17 @@ class TodoWidget(urwid.Button):
         self.save_item()
         self.parent_ui.add_new_todo(position='insert_after')
 
+    def noop(self):
+        pass
+
     def keypress(self, size, key):
         context = 'todo' + (':editing' if self.editing else '')
         if handle_keypress(self, key, context):
             return
         elif self.editing:
-            if key in ['down', 'up']:
-                return None  # don't pass up or down to the ListBox
-            else:
-                return self._w.keypress(size, key)
+            return self._w.keypress(size, key)
         else:
-            if self.key_bindings.is_bound_to(key, 'edit'):
-                self.edit_item()
-                return key
-            else:
-                return key
+            return key
 
 
 class TodoLineBox(urwid.WidgetDecoration, urwid.WidgetWrap):

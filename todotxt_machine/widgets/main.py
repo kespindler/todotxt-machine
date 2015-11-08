@@ -1,9 +1,8 @@
 # coding=utf-8
 import collections
 import urwid
-
 from todotxt_machine.widgets.todo import TodoWidget
-from todotxt_machine.widgets.util import handle_keypress
+from todotxt_machine.widgets.util import handle_keypress, log
 from todotxt_machine.widgets.search import SearchWidget
 from todotxt_machine.widgets.vi import ViListBox, ViColumns, ViPile
 
@@ -220,46 +219,27 @@ class UrwidUI(object):
         elif current_focus == 'header':
             self.frame.focus_position = 'body'
 
-    def keystroke(self, input):
+    def toggle_complete(self):
         focus, focus_index = self.listbox.get_focus()
+        if focus.todo.is_complete():
+            focus.todo.incomplete()
+        else:
+            focus.todo.complete()
+        focus.update_todo()
+        self.update_header()
 
-        if handle_keypress(self, input, 'listbox'):
-            pass  # already handled
-        # Editing
-        elif self.key_bindings.is_bound_to(input, 'toggle-complete'):
-            if focus.todo.is_complete():
-                focus.todo.incomplete()
-            else:
-                focus.todo.complete()
-            focus.update_todo()
-            self.update_header()
-
-        elif self.key_bindings.is_bound_to(input, 'archive'):
-            self.archive_done_todos()
-
-        elif self.key_bindings.is_bound_to(input, 'delete'):
-            if self.todos.todo_items:
-                self.delete_todo(focus.todo.raw_index)
-
-        elif self.key_bindings.is_bound_to(input, 'append'):
-            self.add_new_todo(position='append')
-        elif self.key_bindings.is_bound_to(input, 'insert-before'):
-            self.add_new_todo(position='insert_before')
-        elif self.key_bindings.is_bound_to(input, 'insert-after'):
-            self.add_new_todo(position='insert_after')
-
-        # Save current file
-        elif self.key_bindings.is_bound_to(input, 'save'):
-            self.save_todos()
-
-        # Reload original file
-        elif self.key_bindings.is_bound_to(input, 'reload'):
-            self.reload_todos_from_file()
+    def keystroke(self, key):
+        if handle_keypress(self, key, 'listbox'):
+            return
+        return key
 
     def is_filtering(self):
         return self.searching or self.filtering
 
-    def delete_todo(self, index):
+    def delete_todo(self, index=None):
+        if index is None:
+            focus, focus_index = self.listbox.get_focus()
+            index = focus.todo.raw_index
         if self.todos.todo_items:
             item = self.todos.delete(index)
             if self.is_filtering():
@@ -279,13 +259,13 @@ class UrwidUI(object):
         if self.filtering:
             position = 'append'
 
-        if position is 'append':
+        if position == 'append':
             new_index = self.todos.append('', add_creation_date=False)
             self.listbox.body.append(TodoWidget(self.todos[new_index], self.key_bindings, self.colorscheme, self, editing=True, wrapping=self.wrapping[0], border=self.border[0]))
         else:
-            if position is 'insert_after':
+            if position == 'insert_after':
                 new_index = self.todos.insert(focus_index+1, '', add_creation_date=False)
-            elif position is 'insert_before':
+            elif position == 'insert_before':
                 new_index = self.todos.insert(focus_index, '', add_creation_date=False)
 
             self.listbox.body.insert(new_index, TodoWidget(self.todos[new_index], self.key_bindings, self.colorscheme, self, editing=True, wrapping=self.wrapping[0], border=self.border[0]))
@@ -424,6 +404,7 @@ class UrwidUI(object):
     def format_tooltip(self, name):
         key_column_width = 12
         data = self.key_bindings.key_bindings[name]
+        log.info(name)
         keys = ', '.join(data['keys'])
         return '{keys} - {tooltip}'.format(keys=keys.ljust(key_column_width),
                                            tooltip=data['tooltip'])
@@ -433,7 +414,7 @@ class UrwidUI(object):
         return [
             urwid.Divider(),
             urwid.AttrWrap(urwid.Text(title), header_highlight),
-            urwid.Text('\n' + '\n'.join(self.format_tooltip(name) for name in names) + '\n'),
+            urwid.Text('\n'.join(self.format_tooltip(name) for name in names)),
         ]
 
     def create_help_panel(self):
@@ -449,36 +430,13 @@ class UrwidUI(object):
                             'toggle-borders', 'save', 'reload',
                         ]) +
                         self.help_block('Movement', [
-                            'mouse click', 'down', 'up', 'top', 'bottom'
+                            'mouse click', 'down', 'up', 'top', 'bottom',
                             'left', 'right', 'change-focus',
                         ]) +
-                        [ urwid.AttrWrap(urwid.Text("""
-Manipulating Todo Items
-""".strip()), header_highlight) ] +
-                        # [ urwid.Divider(u'─') ] +
-
-                        [ urwid.Text("""
-{0} - complete / un-complete selected todo item
-{1} - archive completed todo items to done.txt (if specified)
-{2} - add a new todo to the end of the list
-{3} - add a todo after the selected todo (when not filtering)
-{4} - add a todo before the selected todo (when not filtering)
-{5} - edit the selected todo
-{6} - delete the selected todo
-{7} - swap with item below
-{8} - swap with item above
-""".format(
-                            self.key_bindings["toggle-complete" ].ljust(key_column_width),
-                            self.key_bindings["archive"         ].ljust(key_column_width),
-                            self.key_bindings["append"          ].ljust(key_column_width),
-                            self.key_bindings["insert-after"    ].ljust(key_column_width),
-                            self.key_bindings["insert-before"   ].ljust(key_column_width),
-                            self.key_bindings["edit"            ].ljust(key_column_width),
-                            self.key_bindings["delete"          ].ljust(key_column_width),
-                            self.key_bindings["swap-down"       ].ljust(key_column_width),
-                            self.key_bindings["swap-up"         ].ljust(key_column_width),
-                        ))] +
-
+                        self.help_block('Manipulating Todo Items', [
+                            'toggle-complete', 'archive', 'append', 'insert-after',
+                            'insert-before', 'edit', 'delete', 'swap-down', 'swap-up'
+                        ]) +
                         [ urwid.AttrWrap(urwid.Text("""
 While Editing a Todo
 """.strip()), header_highlight) ] +

@@ -1,6 +1,8 @@
 # coding=utf-8
 import urwid
 
+from todotxt_machine.widgets.util import handle_keypress
+
 
 # Modified from http://wiki.goffi.org/wiki/Urwid-satext/en
 class AdvancedEdit(urwid.Edit):
@@ -31,7 +33,27 @@ class AdvancedEdit(urwid.Edit):
         self.completion_cb = callback
         self.completion_data = {}
 
+    def edit_complete(self):
+        try:
+            before = self.edit_text[:self.edit_pos]
+            if self.completion_data:
+                if (not self.completion_data['completed']
+                        or self.completion_data['position'] != self.edit_pos
+                        or not before.endswith(self.completion_data['completed'])):
+                    self.completion_data.clear()
+                else:
+                    before = before[:-len(self.completion_data['completed'])]
+            complete = self.completion_cb(before, self.completion_data)
+            self.completion_data['completed'] = complete[len(before):]
+            self.set_edit_text(complete+self.edit_text[self.edit_pos:])
+            self.set_edit_pos(len(complete))
+            self.completion_data['position'] = self.edit_pos
+        except AttributeError:
+            pass
+
     def keypress(self, size, key):
+        if handle_keypress(self, key, 'edit'):
+            return
         if self.key_bindings.is_bound_to(key, 'edit-home'):
             key = 'home'
         elif self.key_bindings.is_bound_to(key, 'edit-end'):
@@ -65,24 +87,5 @@ class AdvancedEdit(urwid.Edit):
             after = self.edit_text[self.edit_pos:]
             pos = after.rstrip().find(" ")+1
             self.set_edit_pos(self.edit_pos+pos)
-        elif self.key_bindings.is_bound_to(key, 'edit-complete'):
-            try:
-                before = self.edit_text[:self.edit_pos]
-                if self.completion_data:
-                    if (not self.completion_data['completed']
-                            or self.completion_data['position'] != self.edit_pos
-                            or not before.endswith(self.completion_data['completed'])):
-                        self.completion_data.clear()
-                    else:
-                        before = before[:-len(self.completion_data['completed'])]
-                complete = self.completion_cb(before, self.completion_data)
-                self.completion_data['completed'] = complete[len(before):]
-                self.set_edit_text(complete+self.edit_text[self.edit_pos:])
-                self.set_edit_pos(len(complete))
-                self.completion_data['position'] = self.edit_pos
-                return
-            except AttributeError:
-                # No completion method defined
-                pass
         return super(AdvancedEdit, self).keypress(size, key)
 
