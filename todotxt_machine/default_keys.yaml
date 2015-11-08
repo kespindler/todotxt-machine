@@ -87,7 +87,7 @@ key_bindings:
     tooltip: finalize search
     keys: enter
     handler: search
-    callback: finalize_search
+    callback: search_end
   search-clear:
     # TODO turn into a universal filter clear
     tooltip: clear search
