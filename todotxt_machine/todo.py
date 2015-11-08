@@ -4,9 +4,11 @@ import re
 import random
 import urwid
 from datetime import date
+import logging
 
 from todotxt_machine.terminal_operations import TerminalOperations
 
+log = logging.getLogger()
 
 class Todo(object):
     """Single Todo item"""
@@ -353,29 +355,21 @@ class Todos:
     def filter_contexts_and_projects(self, contexts, projects):
         return [item for item in self.todo_items if set(projects) & set(item.projects) or set(contexts) & set(item.contexts)]
 
-    def search(self, search_string):
-        search_string = re.escape(search_string)
-        # print(search_string)
-        ss = []
-        substrings = search_string.split("\\")
-        for index, substring in enumerate(substrings):
-            s = ".*?".join(substring)
-            # s.replace(" .*?", " ")
-            if 0 < index < len(substrings)-1:
-                s += ".*?"
-            ss.append(s)
-        # print(repr(ss))
-        search_string_regex  = '^.*('
-        search_string_regex += "\\".join(ss)
-        search_string_regex += ').*'
-        # print(search_string_regex)
+    def valid_search(self, search_string):
+        try:
+            return re.compile('(%s)' % search_string, re.IGNORECASE)
+        except:
+            return None
 
-        r = re.compile(search_string_regex, re.IGNORECASE)
+    def search(self, search_string, invert=False):
+        reg = self.valid_search(search_string)
         results = []
         for t in self.todo_items:
-            match = r.search(t.raw)
-            if match:
+            match = reg.search(t.raw)
+            if match and not invert:
                 t.search_matches = match.groups()
+                results.append(t)
+            elif not match and invert:
                 results.append(t)
         return results
 

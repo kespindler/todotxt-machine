@@ -38,8 +38,6 @@ class AdvancedEdit(urwid.Edit):
         self.completion_data = {}
 
     def keypress(self, size, key):
-        if handle_keypress(self, key, 'edit'):
-            pass  # already handled
         if self.key_bindings.is_bound_to(key, 'edit-home'):
             key = 'home'
         elif self.key_bindings.is_bound_to(key, 'edit-end'):
@@ -178,7 +176,6 @@ class TodoWidget(urwid.Button):
 
     def save_item(self):
         text = self._w.original_widget.edit_text.strip()
-        log.info('saving text: "%s"', text)
         if text:
             self.todo.update(text)
             self.update_todo()
@@ -188,17 +185,22 @@ class TodoWidget(urwid.Button):
             self.parent_ui.delete_todo(self.todo.raw_index)
         self.editing = False
 
+    def save_and_append(self):
+        self.save_item()
+        self.parent_ui.add_new_todo(position='insert_after')
+
     def keypress(self, size, key):
         # TODO im not sure why this keypress has different contract
         # or if this is actually right...
-        if handle_keypress(self, key, 'todo'):
-            return None
+        context = 'todo' + (':editing' if self.editing else '')
+        if handle_keypress(self, key, context):
+            return key
         elif self.editing:
             if key in ['down', 'up']:
                 return None  # don't pass up or down to the ListBox
-            elif self.key_bindings.is_bound_to(key, 'save-item'):
-                self.save_item()
-                return key
+            # elif self.key_bindings.is_bound_to(key, 'save-item'):
+            #     self.save_item()
+            #     return key
             else:
                 return self._w.keypress(size, key)
         else:
@@ -380,6 +382,7 @@ class UrwidUI(object):
         self.view = None
         self.frame = None
         self.listbox = None
+        self.search_box = None
 
     def visible_lines(self):
         lines = self.loop.screen_size[1] - 1  # minus one for the header
@@ -516,6 +519,10 @@ class UrwidUI(object):
         focus.update_todo()
         self.update_header()
 
+    def search_clear(self):
+        if self.searching:
+            self.clear_search_term()
+
     def keystroke(self, input):
         focus, focus_index = self.listbox.get_focus()
 
@@ -553,17 +560,6 @@ class UrwidUI(object):
 
             elif current_focus == 'header':
                 self.frame.focus_position = 'body'
-
-        # View options
-        elif self.key_bindings.is_bound_to(input, 'toggle-filter'):
-            self.toggle_filter_panel()
-        elif self.key_bindings.is_bound_to(input, 'clear-filter'):
-            self.clear_filters()
-        elif self.key_bindings.is_bound_to(input, 'search'):
-            self.start_search()
-        elif self.key_bindings.is_bound_to(input, 'search-clear'):
-            if self.searching:
-                self.clear_search_term()
 
         # Editing
         elif self.key_bindings.is_bound_to(input, 'toggle-complete'):
@@ -682,19 +678,23 @@ class UrwidUI(object):
         self.search_string = new_contents
         self.search_todo_list(self.search_string)
 
-    def search_todo_list(self, search_string=""):
-        if search_string:
+    def search_todo_list(self, search_string="", invert=False):
+        if search_string and self.todos.valid_search(search_string):
             self.delete_todo_widgets()
-
             self.searching = True
 
-            for t in self.todos.search(search_string):
-                self.listbox.body.append( TodoWidget(t, self.key_bindings, self.colorscheme, self, wrapping=self.wrapping[0], border=self.border[0]) )
+            for t in self.todos.search(search_string, invert=invert):
+                log.info('found %s', t)
+                self.listbox.body.append(TodoWidget(t, self.key_bindings, self.colorscheme, self, wrapping=self.wrapping[0], border=self.border[0]))
 
     def start_search(self):
         self.searching = True
         self.update_footer()
         self.frame.set_focus('footer')
+
+    def run_search(self, search_string, invert=False):
+        self.search_todo_list(search_string, invert=invert)
+        self.finalize_search()
 
     def finalize_search(self):
         self.search_string = ''
@@ -839,32 +839,8 @@ While Editing a Todo
 Sorting
 """.strip()), header_highlight) ] +
                 self.help_block('Sorting', ['toggle-sorting']) +
-                [ urwid.AttrWrap(urwid.Text("""
-Filtering
-""".strip()), header_highlight) ] +
-                # [ urwid.Divider(u'─') ] +
-
-                [ urwid.Text("""
-{0} - open / close the filtering panel
-{1} - clear any active filters
-""".format(
-    self.key_bindings["toggle-filter" ].ljust(key_column_width),
-    self.key_bindings["clear-filter"  ].ljust(key_column_width),
-))] +
-                [ urwid.AttrWrap(urwid.Text("""
-Searching
-""".strip()), header_highlight) ] +
-                # [ urwid.Divider(u'─') ] +
-
-                [ urwid.Text("""
-{0} - start search
-{1} - finalize search
-{2} - clear search
-""".format(
-    self.key_bindings["search"       ].ljust(key_column_width),
-    self.key_bindings["search-end"   ].ljust(key_column_width),
-    self.key_bindings["search-clear" ].ljust(key_column_width),
-))]
+                self.help_block('Filtering', ['toggle-filter', 'clear-filter']) +
+                self.help_block('Searching', ['search', 'search-end', 'search-clear'])
             ),
             left=1, right=1, min_width=10 ), title='Key Bindings'), 'default')
 

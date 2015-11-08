@@ -41,7 +41,6 @@ class KeyBindings:
         internal['append']           = ['n']
         internal['insert-after']     = ['o']
         internal['insert-before']    = ['O']
-        internal['save-item']        = ['enter', 'esc']
         internal['edit']             = ['enter', 'i', 'a']
         internal['delete']           = ['ctrl d']
         internal['swap-down']        = ['J']
@@ -58,11 +57,6 @@ class KeyBindings:
         internal['edit-delete-end']  = ['ctrl k']
         internal['edit-delete-beginning'] = ['ctrl u']
         internal['edit-paste']       = ['ctrl y']
-        internal['toggle-filter']    = ['f']
-        internal['clear-filter']     = ['F']
-        internal['search']           = ['/']
-        internal['search-end']       = ['enter']
-        internal['search-clear']     = ['C']
 
         for k, v in internal.iteritems():
             self.key_bindings[k] = dict(

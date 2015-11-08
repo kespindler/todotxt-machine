@@ -69,17 +69,42 @@ key_bindings:
     callback: set_priority
     kwargs: {priority: ''}
   toggle-filter:
-    tooltip: |
-      toggle sort order (Unsorted, Ascending, Descending)
-              sort order is saved on quit
-    keys: s
+    tooltip: open / close the filtering panel
+    keys: f
     handler: listbox
-    callback: toggle_sorting
+    callback: toggle_filter_panel
   clear-filter:
-    tooltip: |
-      toggle sort order (Unsorted, Ascending, Descending)
-              sort order is saved on quit
-    keys: s
+    tooltip: clear any active filters
+    keys: F
     handler: listbox
-    callback: toggle_sorting
+    callback: clear_filters
+  search:
+    tooltip: start search
+    keys: /
+    handler: listbox
+    callback: start_search
+  search-end:
+    tooltip: finalize search
+    keys: enter
+    handler: null
+    callback: finalize_search
+  search-clear:
+    tooltip: clear search
+    keys: W
+    handler: listbox
+    callback: clear_filters
+  search-inbox:
+    tooltip: search for items without a project
+    keys: I
+    handler: listbox
+    callback: run_search
+    kwargs: {search_string: '\+', invert: true}
+  save-item:
+    keys: esc
+    handler: todo:editing
+    callback: save_item
+  save-and-append:
+    keys: enter
+    handler: todo:editing
+    callback: save_and_append
 
