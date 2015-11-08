@@ -724,43 +724,37 @@ class UrwidUI(object):
             w = None
         return w
 
+    def format_tooltip(self, name):
+        key_column_width = 12
+        data = self.key_bindings.key_bindings[name]
+        log.info('%s %s', name, repr(data))
+        keys = ', '.join(data['keys'])
+        return '{keys} - {tooltip}'.format(keys=keys.ljust(key_column_width),
+                                           tooltip=data['tooltip'])
+
+    def help_block(self, title, names):
+        header_highlight = 'plain_selected'
+        return [
+           urwid.Divider(),
+           urwid.AttrWrap(urwid.Text(title), header_highlight),
+           urwid.Text('\n' + '\n'.join(self.format_tooltip(name) for name in names) + '\n'),
+        ]
+
     def create_help_panel(self):
         key_column_width = 12
         header_highlight = 'plain_selected'
         return urwid.AttrMap(
             urwid.LineBox(
             urwid.Padding(
-            ViListBox(self.key_bindings,
-                [ urwid.Divider() ] +
-
-                [ urwid.AttrWrap(urwid.Text("""
-General
-""".strip()), header_highlight) ] +
-                # [ urwid.Divider(u'─') ] +
-
-                [ urwid.Text("""
-{0} - show / hide this help message
-{1} - quit and save
-{2} - show / hide toolbar
-{3} - toggle word wrap
-{4} - toggle borders on todo items
-{5} - save current todo file
-{6} - reload the todo file (discarding changes)
-""".format(
-    self.key_bindings["toggle-help"     ].ljust(key_column_width),
-    self.key_bindings["quit"            ].ljust(key_column_width),
-    self.key_bindings["toggle-toolbar"  ].ljust(key_column_width),
-    self.key_bindings["toggle-wrapping" ].ljust(key_column_width),
-    self.key_bindings["toggle-borders"  ].ljust(key_column_width),
-    self.key_bindings["save"            ].ljust(key_column_width),
-    self.key_bindings["reload"          ].ljust(key_column_width),
-))] +
-
+            ViListBox(
+                self.key_bindings,
+                self.help_block('General', [
+                    'toggle-help', 'quit', 'toggle-toolbar', 'toggle-wrapping',
+                    'toggle-borders', 'save', 'reload',
+                ]) +
                 [ urwid.AttrWrap(urwid.Text("""
 Movement
 """.strip()), header_highlight) ] +
-                # [ urwid.Divider(u'─') ] +
-
                 [ urwid.Text("""
 {0} - select any todo, checkbox or button
 {1} - move selection down
@@ -844,14 +838,7 @@ While Editing a Todo
                 [ urwid.AttrWrap(urwid.Text("""
 Sorting
 """.strip()), header_highlight) ] +
-                # [ urwid.Divider(u'─') ] +
-
-                [ urwid.Text("""
-{0} - toggle sort order (Unsorted, Ascending, Descending)
-               sort order is saved on quit
-""".format(
-    self.key_bindings["toggle-sorting"].ljust(key_column_width),
-))] +
+                self.help_block('Sorting', ['toggle-sorting']) +
                 [ urwid.AttrWrap(urwid.Text("""
 Filtering
 """.strip()), header_highlight) ] +
@@ -920,7 +907,7 @@ Searching
 
     def reload_todos_from_memory(self):
         for t in self.todos.todo_items:
-            self.listbox.body.append( TodoWidget(t, self.key_bindings, self.colorscheme, self, wrapping=self.wrapping[0], border=self.border[0]) )
+            self.listbox.body.append(TodoWidget(t, self.key_bindings, self.colorscheme, self, wrapping=self.wrapping[0], border=self.border[0]))
 
     def clear_filters(self, button=None):
         self.delete_todo_widgets()

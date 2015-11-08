@@ -29,8 +29,6 @@ class KeyBindings:
                 data['keys'] = [data['keys']]
             self.key_bindings[name] = data
         internal = dict()
-        internal['save']             = ['S']
-        internal['reload']           = ['R']
         internal['down']             = ['j', 'down']
         internal['up']               = ['k', 'up']
         internal['top']              = ['g']

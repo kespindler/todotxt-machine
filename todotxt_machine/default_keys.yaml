@@ -1,7 +1,7 @@
 key_bindings:
   toggle-help:
     tooltip: show / hide this help message
-    keys: [h, ?]
+    keys: ['h', '?']
     handler: listbox
     callback: toggle_help_panel
   quit:
@@ -10,21 +10,37 @@ key_bindings:
     handler: listbox
     callback: quit
   toggle-toolbar:
+    tooltip: show / hide toolbar
     keys: t
     handler: listbox
     callback: toggle_toolbar
   toggle-borders:
+    tooltip: toggle borders on todo items
     keys: b
     handler: listbox
     callback: toggle_border
   toggle-wrapping:
+    tooltip: toggle word wrap
     keys: w
     handler: listbox
     callback: toggle_wrapping
+  save:
+    tooltip: save current todo file
+    keys: S
+    handler: listbox
+    callback: save
+  reload:
+    tooltip: reload the todo file (discarding changes)
+    keys: R
+    handler: listbox
+    callback: reload_todos_from_mem
   toggle-sorting:
     keys: s
     handler: listbox
     callback: toggle_sorting
+    tooltip: |
+      toggle sort order (Unsorted, Ascending, Descending)
+              sort order is saved on quit
   priority-a:
     keys: A
     handler: listbox
@@ -52,9 +68,18 @@ key_bindings:
     handler: listbox
     callback: set_priority
     kwargs: {priority: ''}
-  toggle-wrapping:
-    keys: w
+  toggle-filter:
+    tooltip: |
+      toggle sort order (Unsorted, Ascending, Descending)
+              sort order is saved on quit
+    keys: s
     handler: listbox
-    callback: toggle_wrapping
-
+    callback: toggle_sorting
+  clear-filter:
+    tooltip: |
+      toggle sort order (Unsorted, Ascending, Descending)
+              sort order is saved on quit
+    keys: s
+    handler: listbox
+    callback: toggle_sorting
 
