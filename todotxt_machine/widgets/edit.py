@@ -51,41 +51,61 @@ class AdvancedEdit(urwid.Edit):
         except AttributeError:
             pass
 
+    def set_edit_position(self, index=None, from_last=False, relative=None):
+        """
+        Example usage:
+        self.move_selection(0) puts you at the start
+        self.move_selection(from_last=True) puts you at the end
+        self.move_selection(relative=1) moves you forward one
+        self.move_selection(relative=-1) moves you back one
+        self.move_selection(from_last=True, relative=-1) puts you second to last
+        """
+        if index is None:
+            if from_last:
+                index = len(self._edit_text) - 1
+            else:
+                index = self._edit_pos
+        if relative:
+            index += relative
+        self.set_edit_pos(index)
+
+    def edit_word_left(self):
+        before = self.edit_text[:self.edit_pos]
+        pos = before.rstrip().rfind(" ")+1
+        self.set_edit_pos(pos)
+
+    def edit_word_right(self):
+        after = self.edit_text[self.edit_pos:]
+        pos = after.rstrip().find(" ")+1
+        self.set_edit_pos(self.edit_pos+pos)
+
+    def edit_delete_word(self):
+        before = self.edit_text[:self.edit_pos]
+        pos = before.rstrip().rfind(" ")+1
+        self.parent_ui.yanked_text = self.edit_text[pos:self.edit_pos]
+        self.set_edit_text(before[:pos] + self.edit_text[self.edit_pos:])
+        self.set_edit_pos(pos)
+
+    def edit_delete_beginning(self):
+        before = self.edit_text[:self.edit_pos]
+        self.parent_ui.yanked_text = self.edit_text[:self.edit_pos]
+        self.set_edit_text(self.edit_text[self.edit_pos:])
+        self.set_edit_pos(0)
+
+    def edit_delete_end(self):
+        self.parent_ui.yanked_text = self.edit_text[self.edit_pos:]
+        self._delete_highlighted()
+        self.set_edit_text(self.edit_text[:self.edit_pos])
+
+    def edit_paste(self):
+        self.set_edit_text(
+            self.edit_text[:self.edit_pos] +
+            self.parent_ui.yanked_text +
+            self.edit_text[self.edit_pos:])
+        self.set_edit_pos(self.edit_pos + len(self.parent_ui.yanked_text))
+
     def keypress(self, size, key):
         if handle_keypress(self, key, 'edit'):
             return
-        if self.key_bindings.is_bound_to(key, 'edit-home'):
-            key = 'home'
-        elif self.key_bindings.is_bound_to(key, 'edit-end'):
-            key = 'end'
-        elif self.key_bindings.is_bound_to(key, 'edit-delete-end'):
-            self.parent_ui.yanked_text = self.edit_text[self.edit_pos:]
-            self._delete_highlighted()
-            self.set_edit_text(self.edit_text[:self.edit_pos])
-        elif self.key_bindings.is_bound_to(key, 'edit-paste'):
-            self.set_edit_text(
-                self.edit_text[:self.edit_pos] +
-                self.parent_ui.yanked_text +
-                self.edit_text[self.edit_pos:])
-            self.set_edit_pos(self.edit_pos + len(self.parent_ui.yanked_text))
-        elif self.key_bindings.is_bound_to(key, 'edit-delete-word'):
-            before = self.edit_text[:self.edit_pos]
-            pos = before.rstrip().rfind(" ")+1
-            self.parent_ui.yanked_text = self.edit_text[pos:self.edit_pos]
-            self.set_edit_text(before[:pos] + self.edit_text[self.edit_pos:])
-            self.set_edit_pos(pos)
-        elif self.key_bindings.is_bound_to(key, 'edit-delete-beginning'):
-            before = self.edit_text[:self.edit_pos]
-            self.parent_ui.yanked_text = self.edit_text[:self.edit_pos]
-            self.set_edit_text(self.edit_text[self.edit_pos:])
-            self.set_edit_pos(0)
-        elif self.key_bindings.is_bound_to(key, 'edit-word-left'):
-            before = self.edit_text[:self.edit_pos]
-            pos = before.rstrip().rfind(" ")+1
-            self.set_edit_pos(pos)
-        elif self.key_bindings.is_bound_to(key, 'edit-word-right'):
-            after = self.edit_text[self.edit_pos:]
-            pos = after.rstrip().find(" ")+1
-            self.set_edit_pos(self.edit_pos+pos)
         return super(AdvancedEdit, self).keypress(size, key)
 

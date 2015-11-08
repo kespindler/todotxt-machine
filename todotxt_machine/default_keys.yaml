@@ -113,6 +113,7 @@ key_bindings:
     handler: todo:editing
     callback: save_item
   save-and-append:
+    tooltip: save current item and insert below
     keys: enter
     handler: todo:editing
     callback: save_and_append
@@ -220,6 +221,57 @@ key_bindings:
     handler: todo:editing
     callback: noop
   edit-complete:
+    tooltip: tab complete contexts and projects
     keys: tab
     handler: edit
     callback: edit_complete
+  edit-home:
+    tooltip: move cursor to beginning of line
+    keys: ['ctrl a', 'home']
+    handler: edit
+    callback: set_edit_position
+    kwargs: {index: 0}
+  edit-end:
+    tooltip: move cursor to end of line
+    keys: ['ctrl e', 'end']
+    handler: edit
+    callback: set_edit_position
+    kwargs: {from_last: true}
+  edit-move-left:
+    tooltip: move cursor left
+    keys: left
+    handler: null
+  edit-move-right:
+    tooltip: move cursor right
+    keys: right
+    handler: null
+  edit-word-left:
+    tooltip: move cursor backwards (left) by a word
+    keys: ['meta b', 'ctrl b']
+    handler: edit
+    callback: edit_word_left
+  edit-word-right:
+    tooltip: move cursor forwards (right) by a word
+    keys: ['meta f', 'ctrl f']
+    handler: edit
+    callback: edit_word_right
+  edit-delete-word:
+    tooltip: delete one word backwards
+    keys: ['ctrl w']
+    handler: edit
+    callback: edit_delete_word
+  edit-delete-end:
+    tooltip: delete from the cursor to the end of the line
+    keys: ['ctrl k']
+    handler: edit
+    callback: edit_delete_end
+  edit-delete-beginning:
+    tooltip: delete from the cursor to the beginning of the line
+    keys: ['ctrl u']
+    handler: edit
+    callback: edit_delete_beginning
+  edit-paste:
+    tooltip: paste last deleted text
+    keys: ['ctrl y']
+    handler: edit
+    callback: edit_paste

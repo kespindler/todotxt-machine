@@ -9,11 +9,11 @@ class KeyBindings:
         self.user_keys = user_keys
         self.key_bindings = {}
         self.fill_with_defaults()
-        self.fillWithUserKeys(user_keys)
+        self.fill_with_user_keys(user_keys)
 
-    def fillWithUserKeys(self, users_keys):
+    def fill_with_user_keys(self, users_keys):
         for bind in users_keys:
-            key = self.userKeysToList(users_keys[bind])
+            key = self.user_keys_to_list(users_keys[bind])
             try:
                 default = self.key_bindings[bind]
                 self.key_bindings[bind] = key
@@ -28,29 +28,11 @@ class KeyBindings:
             if isinstance(data['keys'], basestring):
                 data['keys'] = [data['keys']]
             self.key_bindings[name] = data
-        internal = dict()
-        internal['edit-save']        = ['return']
-        internal['edit-move-left']   = ['left']
-        internal['edit-move-right']  = ['right']
-        internal['edit-word-left']   = ['meta b', 'ctrl b']
-        internal['edit-word-right']  = ['meta f', 'ctrl f']
-        internal['edit-end']         = ['ctrl e', 'end']
-        internal['edit-home']        = ['ctrl a', 'home']
-        internal['edit-delete-word'] = ['ctrl w']
-        internal['edit-delete-end']  = ['ctrl k']
-        internal['edit-delete-beginning'] = ['ctrl u']
-        internal['edit-paste']       = ['ctrl y']
-
-        for k, v in internal.iteritems():
-            self.key_bindings[k] = dict(
-                keys=v,
-                handler=None,
-            )
 
     def __getitem__(self, index):
         return ", ".join(self.get_key_binding(index))
 
-    def userKeysToList(self, userKey):
+    def user_keys_to_list(self, userKey):
         keys = userKey.split(',')
         return [key.strip() for key in keys]
 

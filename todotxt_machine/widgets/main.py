@@ -418,8 +418,6 @@ class UrwidUI(object):
         ]
 
     def create_help_panel(self):
-        key_column_width = 12
-        header_highlight = 'plain_selected'
         return urwid.AttrMap(
             urwid.LineBox(
                 urwid.Padding(
@@ -435,46 +433,18 @@ class UrwidUI(object):
                         ]) +
                         self.help_block('Manipulating Todo Items', [
                             'toggle-complete', 'archive', 'append', 'insert-after',
-                            'insert-before', 'edit', 'delete', 'swap-down', 'swap-up'
+                            'insert-before', 'edit', 'delete', 'swap-down', 'swap-up',
                         ]) +
-                        [ urwid.AttrWrap(urwid.Text("""
-While Editing a Todo
-""".strip()), header_highlight) ] +
-                        # [ urwid.Divider(u'─') ] +
-
-                        [ urwid.Text("""
-{0} - tab complete contexts and projects
-{1} - save todo item
-{2} - move cursor left and right
-{3}
-{4} - move cursor backwards (left) by one word
-{5} - move cursor forwards (right) by one word
-{6} - move cursor the beginning or end of the line
-{7}
-{8} - delete one word backwards
-{9} - delete from the cursor to the end of the line
-{10} - delete from the cursor to the beginning of the line
-{11} - paste last deleted text
-""".format(
-                            self.key_bindings["edit-complete"         ].ljust(key_column_width),
-                            self.key_bindings["edit-save"             ].ljust(key_column_width),
-                            self.key_bindings["edit-move-left"        ].ljust(key_column_width),
-                            self.key_bindings["edit-move-right"       ].ljust(key_column_width),
-                            self.key_bindings["edit-word-left"        ].ljust(key_column_width),
-                            self.key_bindings["edit-word-right"       ].ljust(key_column_width),
-                            self.key_bindings["edit-home"             ].ljust(key_column_width),
-                            self.key_bindings["edit-end"              ].ljust(key_column_width),
-                            self.key_bindings["edit-delete-word"      ].ljust(key_column_width),
-                            self.key_bindings["edit-delete-end"       ].ljust(key_column_width),
-                            self.key_bindings["edit-delete-beginning" ].ljust(key_column_width),
-                            self.key_bindings["edit-paste"            ].ljust(key_column_width),
-                        ))] +
-
+                        self.help_block('While Editing a Todo', [
+                            'edit-complete', 'save-item', 'edit-move-left', 'edit-move-right',
+                            'edit-word-left', 'edit-word-right', 'edit-home', 'edit-end',
+                            'edit-delete-word', 'edit-delete-end', 'edit-delete-beginning', 'edit-paste',
+                        ]) +
                         self.help_block('Sorting', ['toggle-sorting']) +
                         self.help_block('Filtering', ['toggle-filter', 'clear-filter']) +
                         self.help_block('Searching', ['search', 'search-end', 'search-clear'])
                     ),
-                    left=1, right=1, min_width=10 ), title='Key Bindings'), 'default')
+                    left=1, right=1, min_width=10), title='Key Bindings'), 'default')
 
     def create_filter_panel(self):
         w = urwid.AttrMap(
