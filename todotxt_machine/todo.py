@@ -43,6 +43,8 @@ class Todo(object):
                 self.due_date = str(date.today())
             elif group == '!tom':
                 self.due_date = str(date.today() + timedelta(days=1))
+            elif group == '!0':
+                self.due_date = ''
 
     def update(self, item):
         self.raw = Todos._macro_regex.sub('', item).strip()
@@ -215,8 +217,10 @@ class Todos:
         return index
 
     def delete(self, index):
+        item = self.todo_items[index]
         del self.todo_items[index]
         self.update_raw_indices()
+        return item
 
     def __iter__(self):
         self.index = -1

@@ -594,10 +594,18 @@ class UrwidUI(object):
         elif self.key_bindings.is_bound_to(input, 'reload'):
             self.reload_todos_from_file()
 
+    def is_filtering(self):
+        return self.searching or self.filtering
+
     def delete_todo(self, index):
         if self.todos.todo_items:
-            self.todos.delete(index)
-            del self.listbox.body[index]
+            item = self.todos.delete(index)
+            if self.is_filtering():
+                filtered_index = self.filter_results.index(item)
+                del self.listbox.body[filtered_index]
+                del self.filter_results[filtered_index]
+            else:
+                del self.listbox.body[index]
             self.update_header()
 
     def add_new_todo(self, position=False):
