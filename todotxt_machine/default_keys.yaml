@@ -28,7 +28,7 @@ key_bindings:
     tooltip: save current todo file
     keys: S
     handler: listbox
-    callback: save
+    callback: save_todos
   reload:
     tooltip: reload the todo file (discarding changes)
     keys: R
