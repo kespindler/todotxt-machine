@@ -389,10 +389,11 @@ class UrwidUI(object):
     def toggle_sorting(self, button=None):
         self.delete_todo_widgets()
         self.sorting.rotate(1)
+        key = lambda x: getattr(x, 'due_date', '9999-99-99')
         if self.sorting[0] == 'Ascending':
-            self.todos.sorted()
+            self.todos.sorted(key=key)
         elif self.sorting[0] == 'Descending':
-            self.todos.sorted_reverse()
+            self.todos.sorted(key=key, reversed_sort=True)
         elif self.sorting[0] == 'Unsorted':
             self.todos.sorted_raw()
         self.reload_todos_from_memory()

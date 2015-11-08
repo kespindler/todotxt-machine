@@ -74,7 +74,7 @@ class KeyBindings:
             )
 
     def __getitem__(self, index):
-        return ", ".join(self.key_bindings[index])
+        return ", ".join(self.get_key_binding(index))
 
     def userKeysToList(self, userKey):
         keys = userKey.split(',')

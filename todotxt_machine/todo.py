@@ -280,10 +280,10 @@ class Todos:
         # Join all items and use one regex.findall
         # return sorted(set( Todos._project_regex.findall(" ".join(self.raw_items))))
 
-        return sorted(set([project for todo in self.todo_items for project in todo.projects] ))
+        return sorted(set([project for todo in self.todo_items for project in todo.projects]))
 
-    def sorted(self, reversed_sort=False):
-        self.todo_items.sort( key=lambda todo: todo.raw, reverse=reversed_sort )
+    def sorted(self, reversed_sort=False, key=None):
+        self.todo_items.sort(key=key or (lambda todo: todo.raw), reverse=reversed_sort)
 
     def sorted_reverse(self):
         self.sorted(reversed_sort=True)
