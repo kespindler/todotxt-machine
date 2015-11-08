@@ -46,7 +46,7 @@ class KeyBindings:
         internal['insert-before']    = ['O']
         internal['save-item']        = ['enter', 'esc']
         internal['edit']             = ['enter', 'i', 'a']
-        internal['delete']           = ['d']
+        internal['delete']           = ['D']
         internal['swap-down']        = ['J']
         internal['swap-up']          = ['K']
         internal['edit-complete']    = ['tab']
