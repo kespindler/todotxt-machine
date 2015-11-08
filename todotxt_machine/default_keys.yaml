@@ -75,7 +75,7 @@ key_bindings:
     callback: toggle_filter_panel
   clear-filter:
     tooltip: clear any active filters
-    keys: F
+    keys: []
     handler: listbox
     callback: clear_filters
   search:
@@ -89,13 +89,11 @@ key_bindings:
     handler: search
     callback: search_end
   search-clear:
-    # TODO turn into a universal filter clear
     tooltip: clear search
-    keys: W
+    keys: []
     handler: listbox
     callback: clear_searches
   clear-all-filtering:
-    # TODO turn into a universal filter clear
     tooltip: clear searches and filters.
     keys: esc
     handler: listbox
