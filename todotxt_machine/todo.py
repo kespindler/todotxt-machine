@@ -7,33 +7,42 @@ from datetime import date
 
 from todotxt_machine.terminal_operations import TerminalOperations
 
-class Todo:
+
+class Todo(object):
     """Single Todo item"""
 
-    def __init__(self, item, index,
-            colored="", priority="", contexts=[], projects=[],
-            creation_date="", due_date="", completed_date=""):
-        self.raw            = item.strip()
-        self.raw_index      = index
-        self.creation_date  = creation_date
-        self.priority       = priority
-        self.contexts       = contexts
-        self.projects       = projects
-        self.due_date       = due_date
+    def __init__(self, item, index, priority='', contexts=None, projects=None,
+                 creation_date='', due_date='', completed_date=''):
+        self.raw = item.strip()
+        self.raw_index = index
+        self.creation_date = creation_date
+        self.priority = priority
+        self.contexts = contexts or []
+        self.projects = projects or []
+        self.due_date = due_date
         self.completed_date = completed_date
-        self.colored        = self.highlight()
-        # self.colored_length = TerminalOperations.length_ignoring_escapes(self.colored)
+        self.colored = self.highlight()
+        self.body = self.get_body(self.raw)
+
+    def get_body(self, raw):
+        raw = re.sub(Todos._context_regex, '', raw)
+        raw = re.sub(Todos._creation_date_regex, '', raw)
+        raw = re.sub(Todos._due_date_regex, '', raw)
+        raw = re.sub(Todos._priority_regex, '', raw)
+        raw = re.sub(Todos._project_regex, '', raw)
+        raw = re.sub(Todos._completed_regex, '', raw)
+        return raw.strip()
 
     def update(self, item):
-        self.raw            = item.strip()
-        self.priority       = Todos.priority(item)
-        self.contexts       = Todos.contexts(item)
-        self.projects       = Todos.projects(item)
-        self.creation_date  = Todos.creation_date(item)
-        self.due_date       = Todos.due_date(item)
+        self.raw = item.strip()
+        self.priority = Todos.priority(item)
+        self.contexts = Todos.contexts(item)
+        self.projects = Todos.projects(item)
+        self.creation_date = Todos.creation_date(item)
+        self.due_date = Todos.due_date(item)
         self.completed_date = Todos.completed_date(item)
-        self.colored        = self.highlight()
-        # self.colored_length = TerminalOperations.length_ignoring_escapes(self.colored)
+        self.colored = self.highlight()
+        self.body = self.get_body(self.raw)
 
     def __repr__(self):
         return repr({
@@ -48,8 +57,8 @@ class Todo:
             "completed_date": self.completed_date
         })
 
-    def highlight(self, line="", show_due_date=True, show_contexts=True, show_projects=True):
-        colored = self.raw if line == "" else line
+    def highlight(self, line='', show_due_date=True, show_contexts=True, show_projects=True):
+        colored = self.raw if line == '' else line
         color_list = [colored]
 
         if colored[:2] == "x ":
@@ -64,14 +73,14 @@ class Todo:
             if words_to_be_highlighted:
                 color_list = re.split("(" + "|".join([re.escape(w) for w in words_to_be_highlighted]) + ")", self.raw)
                 for index, w in enumerate(color_list):
-                   if w in self.contexts:
-                       color_list[index] = ('context', w) if show_contexts else ''
-                   elif w in self.projects:
-                       color_list[index] = ('project', w) if show_projects else ''
-                   elif w == "due:"+self.due_date:
-                       color_list[index] = ('due_date', w) if show_due_date else ''
-                   elif w == self.creation_date:
-                       color_list[index] = ('creation_date', w)
+                    if w in self.contexts:
+                        color_list[index] = ('context', w) if show_contexts else ''
+                    elif w in self.projects:
+                        color_list[index] = ('project', w) if show_projects else ''
+                    elif w == "due:"+self.due_date:
+                        color_list[index] = ('due_date', w) if show_due_date else ''
+                    elif w == self.creation_date:
+                        color_list[index] = ('creation_date', w)
 
             if self.priority and self.priority in "ABCDEF":
                 color_list = ("priority_{0}".format(self.priority.lower()), color_list)
@@ -80,11 +89,11 @@ class Todo:
 
         return color_list
 
-    def highlight_search_matches(self, line=""):
+    def highlight_search_matches(self, line=''):
         colored = self.raw if line == "" else line
         color_list = [colored]
         if self.search_matches:
-            color_list = re.split("(" + "|".join([re.escape(match) for match in self.search_matches]) + ")", self.raw)
+            color_list = re.split('(' + '|'.join([re.escape(match) for match in self.search_matches]) + ')', self.raw)
             for index, w in enumerate(color_list):
                 if w in self.search_matches:
                     color_list[index] = ('search_match', w)
@@ -97,6 +106,23 @@ class Todo:
             return False
         else:
             return True
+
+    def build_raw(self):
+        raw = ''
+        if self.completed_date:
+            raw += 'x %s ' % self.completed_date
+        if self.creation_date:
+            raw += '%s ' % self.creation_date
+        if self.priority:
+            raw += '(%s) ' % self.priority
+        raw += self.body
+        if self.due_date:
+            raw += ' due:%s ' % self.due_date
+        if self.projects:
+            raw += ' ' + ' '.join(self.projects)
+        if self.contexts:
+            raw += ' ' + ' '.join(self.contexts)
+        return raw
 
     def complete(self):
         today = date.today()
@@ -113,6 +139,11 @@ class Todo:
         if self.creation_date == "":
             p = "({0}) ".format(self.priority) if self.priority != "" else ""
             self.update("{0}{1} {2}".format(p, date.today(), self.raw.replace(p, "")))
+
+    def set_priority(self, priority):
+        self.priority = priority
+        self.raw = self.build_raw()
+        self.colored = self.highlight()
 
 
 class Todos:

@@ -1,32 +1,60 @@
 key_bindings:
   toggle-help:
     tooltip: show / hide this help message
-    keys: ['h', '?']
-    context:
-      - handler: listbox
-        callback: toggle_help_panel
+    keys: [h, ?]
+    handler: listbox
+    callback: toggle_help_panel
   quit:
     tooltip: quit and save
     keys: q
-    context:
-      - handler: listbox
-        callback: quit
+    handler: listbox
+    callback: quit
   toggle-toolbar:
     keys: t
-    context:
-      - handler: listbox
-        callback: toggle_toolbar
-        kwargs: {}
+    handler: listbox
+    callback: toggle_toolbar
   toggle-borders:
     keys: b
-    context:
-      - handler: listbox
-        callback: toggle_border
-        kwargs: {}
+    handler: listbox
+    callback: toggle_border
   toggle-wrapping:
     keys: w
+    handler: listbox
+    callback: toggle_wrapping
+  toggle-sorting:
+    keys: s
+    handler: listbox
+    callback: toggle_sorting
+  priority-a:
+    keys: A
+    handler: listbox
+    callback: set_priority
+    kwargs: {priority: A}
+  priority-b:
+    keys: B
     context:
-      - handler: listbox
-        callback: toggle_wrapping
-        kwargs: {}
+    handler: listbox
+    callback: set_priority
+    kwargs: {priority: B}
+  priority-c:
+    keys: C
+    context:
+    handler: listbox
+    callback: set_priority
+    kwargs: {priority: C}
+  priority-d:
+    keys: D
+    handler: listbox
+    callback: set_priority
+    kwargs: {priority: D}
+  priority-clear:
+    keys: Z
+    handler: listbox
+    callback: set_priority
+    kwargs: {priority: ''}
+  toggle-wrapping:
+    keys: w
+    handler: listbox
+    callback: toggle_wrapping
+
 

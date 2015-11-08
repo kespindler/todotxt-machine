@@ -29,7 +29,6 @@ class KeyBindings:
                 data['keys'] = [data['keys']]
             self.key_bindings[name] = data
         internal = dict()
-        internal['toggle-wrapping']  = ['w']
         internal['save']             = ['S']
         internal['reload']           = ['R']
         internal['down']             = ['j', 'down']
@@ -46,7 +45,7 @@ class KeyBindings:
         internal['insert-before']    = ['O']
         internal['save-item']        = ['enter', 'esc']
         internal['edit']             = ['enter', 'i', 'a']
-        internal['delete']           = ['D']
+        internal['delete']           = ['ctrl d']
         internal['swap-down']        = ['J']
         internal['swap-up']          = ['K']
         internal['edit-complete']    = ['tab']
@@ -59,11 +58,10 @@ class KeyBindings:
         internal['edit-home']        = ['ctrl a', 'home']
         internal['edit-delete-word'] = ['ctrl w']
         internal['edit-delete-end']  = ['ctrl k']
-        internal['edit-delete-beginning']  = ['ctrl u']
+        internal['edit-delete-beginning'] = ['ctrl u']
         internal['edit-paste']       = ['ctrl y']
         internal['toggle-filter']    = ['f']
         internal['clear-filter']     = ['F']
-        internal['toggle-sorting']   = ['s']
         internal['search']           = ['/']
         internal['search-end']       = ['enter']
         internal['search-clear']     = ['C']
@@ -71,6 +69,7 @@ class KeyBindings:
         for k, v in internal.iteritems():
             self.key_bindings[k] = dict(
                 keys=v,
+                handler=None,
             )
 
     def __getitem__(self, index):
@@ -95,8 +94,6 @@ class KeyBindings:
     def get_handler(self, key, context):
         # TODO create data structure to optimize this...
         for name, data in self.key_bindings.iteritems():
-            if key in data['keys']:
-                for context_config in data.get('context', []):
-                    if context_config['handler'] == context:
-                        return context_config['callback'], context_config.get('kwargs', {})
+            if key in data['keys'] and data['handler'] == context:
+                return data['callback'], data.get('kwargs', {})
         return None, {}

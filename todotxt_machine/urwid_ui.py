@@ -38,6 +38,8 @@ class AdvancedEdit(urwid.Edit):
         self.completion_data = {}
 
     def keypress(self, size, key):
+        if handle_keypress(self, key, 'edit'):
+            pass  # already handled
         if self.key_bindings.is_bound_to(key, 'edit-home'):
             key = 'home'
         elif self.key_bindings.is_bound_to(key, 'edit-end'):
@@ -187,7 +189,11 @@ class TodoWidget(urwid.Button):
         self.editing = False
 
     def keypress(self, size, key):
-        if self.editing:
+        # TODO im not sure why this keypress has different contract
+        # or if this is actually right...
+        if handle_keypress(self, key, 'todo'):
+            return None
+        elif self.editing:
             if key in ['down', 'up']:
                 return None  # don't pass up or down to the ListBox
             elif self.key_bindings.is_bound_to(key, 'save-item'):
@@ -315,12 +321,39 @@ class ViListBox(urwid.ListBox):
         self._command_map = command_map
 
 
+def handle_keypress(widget, key, context):
+    handler, kwargs = widget.key_bindings.get_handler(key, context)
+
+    if not handler:
+        return False
+    log.info('running %s %s', handler, kwargs)
+    getattr(widget, handler)(**kwargs)
+    return True
+
+
 class UrwidUI(object):
+    sort_options = [
+        dict(
+            name='Unsorted',
+            hint='-',
+            key=None,
+        ),
+        dict(
+            name='Due Date',
+            hint='d',
+            key=lambda x: x.due_date or '9999-99-99',
+        ),
+        dict(
+            name='Priority',
+            hint='p',
+            key=lambda x: x.priority or 'z',
+        ),
+    ]
+
     def __init__(self, todos, key_bindings, colorscheme):
         self.wrapping = collections.deque(['clip', 'space'])
         self.border = collections.deque(['no border', 'bordered'])
-        self.sorting = collections.deque(["Unsorted", "Descending", "Ascending"])
-        self.sorting_display = {"Unsorted": "-", "Descending": "v", "Ascending": "^"}
+        self.sort_order = 0
 
         self.todos = todos
         self.key_bindings = key_bindings
@@ -388,14 +421,14 @@ class UrwidUI(object):
 
     def toggle_sorting(self, button=None):
         self.delete_todo_widgets()
-        self.sorting.rotate(1)
-        key = lambda x: getattr(x, 'due_date', '9999-99-99')
-        if self.sorting[0] == 'Ascending':
-            self.todos.sorted(key=key)
-        elif self.sorting[0] == 'Descending':
-            self.todos.sorted(key=key, reversed_sort=True)
-        elif self.sorting[0] == 'Unsorted':
+
+        self.sort_order = (self.sort_order + 1) % len(self.sort_options)
+        sort = self.sort_options[self.sort_order]
+        if sort['key'] is None:
             self.todos.sorted_raw()
+        else:
+            log.info(str(list(sort['key'](x) for x in self.todos.todo_items)))
+            self.todos.sorted(key=sort['key'])
         self.reload_todos_from_memory()
         self.move_selection_top()
         self.update_header()
@@ -477,14 +510,17 @@ class UrwidUI(object):
     def quit(self):
         raise urwid.ExitMainLoop()
 
+    def set_priority(self, priority):
+        focus, focus_index = self.listbox.get_focus()
+        focus.todo.set_priority(priority)
+        focus.update_todo()
+        self.update_header()
+
     def keystroke(self, input):
         focus, focus_index = self.listbox.get_focus()
 
-        handler, kwargs = self.key_bindings.get_handler(input, 'listbox')
-
-        if handler:
-            log.info('running %s %s', handler, kwargs)
-            getattr(self, handler)(**kwargs)
+        if handle_keypress(self, input, 'listbox'):
+            pass  # already handled
         # Movement
         elif self.key_bindings.is_bound_to(input, 'top'):
             self.move_selection_top()
@@ -523,10 +559,6 @@ class UrwidUI(object):
             self.toggle_filter_panel()
         elif self.key_bindings.is_bound_to(input, 'clear-filter'):
             self.clear_filters()
-        elif self.key_bindings.is_bound_to(input, 'toggle-wrapping'):
-            self.toggle_wrapping()
-        elif self.key_bindings.is_bound_to(input, 'toggle-sorting'):
-            self.toggle_sorting()
         elif self.key_bindings.is_bound_to(input, 'search'):
             self.start_search()
         elif self.key_bindings.is_bound_to(input, 'search-clear'):
@@ -636,8 +668,8 @@ class UrwidUI(object):
 
             urwid.Padding(
             urwid.AttrMap(
-            urwid.Button([('header_file', 's'), 'ort: '+self.sorting_display[self.sorting[0]]], on_press=self.toggle_sorting),
-            'header', 'plain_selected'), right=2 ),
+            urwid.Button([('header_file', 's'), 'ort: '+self.sort_options[self.sort_order]['hint']], on_press=self.toggle_sorting),
+            'header', 'plain_selected'), right=2),
 
             urwid.Padding(
             urwid.AttrMap(
