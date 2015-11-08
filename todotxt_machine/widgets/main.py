@@ -390,15 +390,36 @@ class UrwidUI(object):
         for widget in self.listbox.body:
             widget.update_todo()
 
-    def clear_search_term(self, button=None):
-        self.delete_todo_widgets()
+    def clear_filters(self, refresh=True, button=None):
+        self.filtering = False
+        self.filter_results = []
+        self.active_projects = []
+        self.active_contexts = []
+        if refresh:
+            self.redraw_widgets()
+
+    def clear_searches(self, refresh=True, button=None):
         self.searching = False
         self.search_string = ''
         self.filter_results = []
+        if refresh:
+            self.redraw_widgets()
+
+    def clear_all_filters(self, refresh=True):
+        self.clear_filters(False)
+        self.clear_searches(refresh)
+
+    def redraw_widgets(self, focus_index=0):
+        self.delete_todo_widgets()
+        # TODO should perform any search, filtering, sorting
+        self.reload_todos_from_memory()
+        self.view.set_focus(focus_index)
+        self.update_filters()
         self.update_header()
         self.update_footer()
-        # TODO this destroys any sorting we have going
-        self.reload_todos_from_memory()
+
+    def clear_search_term(self, button=None):
+        self.clear_searches()
 
     def create_footer(self):
         if self.searching:
@@ -573,18 +594,6 @@ While Editing a Todo
             self.listbox.body.append(TodoWidget(t, self.key_bindings, self.colorscheme, self,
                                                 wrapping=self.wrapping[0], border=self.border[0]))
 
-    def clear_filters(self, button=None):
-        self.delete_todo_widgets()
-        self.reload_todos_from_memory()
-
-        self.filter_results = []
-        self.active_projects = []
-        self.active_contexts = []
-        self.filtering = False
-        self.view.set_focus(0)
-        self.update_filters()
-        self.update_header()
-
     def checkbox_clicked(self, checkbox, state, data):
         if state:
             if data[0] == 'context':
@@ -600,9 +609,9 @@ While Editing a Todo
         if self.active_projects or self.active_contexts:
             self.filter_todo_list()
             self.view.set_focus(0)
+            self.update_header()
         else:
             self.clear_filters()
-        self.update_header()
 
     def filter_todo_list(self):
         self.delete_todo_widgets()

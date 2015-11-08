@@ -93,7 +93,13 @@ key_bindings:
     tooltip: clear search
     keys: W
     handler: listbox
-    callback: clear_search_term
+    callback: clear_searches
+  clear-all-filtering:
+    # TODO turn into a universal filter clear
+    tooltip: clear searches and filters.
+    keys: esc
+    handler: listbox
+    callback: clear_all_filters
   search-clear-while-editing:
     keys: esc
     handler: search
