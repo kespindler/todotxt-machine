@@ -116,4 +116,54 @@ key_bindings:
     keys: enter
     handler: todo:editing
     callback: save_and_append
-
+  mouse click:
+    keys: []
+    handler: null
+    tooltip: select any todo, checkbox or button
+  down:
+    tooltip: move selection down
+    keys: ['down', 'j']
+    handler: listbox
+    callback: null  # automatic
+  up:
+    tooltip: move selection up
+    keys: ['up', 'k']
+    handler: listbox
+    callback: null # automatic
+  top:
+    tooltip: move selection to the top item
+    keys: g
+    handler: listbox
+    callback: move_selection
+    kwargs: {index: 0}
+  bottom:
+    tooltip: move selection to the bottom item
+    keys: G
+    handler: listbox
+    callback: move_selection
+    kwargs: {from_last: true}
+  left:
+    tooltip: move selection to filter panel
+    keys: ['right', 'L']
+    handler: listbox
+    callback: null  # automatic
+  right:
+    tooltip: move selection to todos
+    keys: ['left', 'H']
+    handler: listbox
+    callback: null  # automatic
+  change-focus:
+    tooltip: toggle focus between todos, filter panel, and toolbar
+    keys: tab
+    handler: listbox
+    callback: change_focus
+  swap-up:
+    tooltip: swap with item above
+    keys: K
+    handler: listbox
+    callback: swap_up
+  swap-down:
+    tooltip: swap with item below
+    keys: J
+    handler: listbox
+    callback: swap_down

@@ -91,17 +91,12 @@ class TodoWidget(urwid.Button):
         self.parent_ui.add_new_todo(position='insert_after')
 
     def keypress(self, size, key):
-        # TODO im not sure why this keypress has different contract
-        # or if this is actually right...
         context = 'todo' + (':editing' if self.editing else '')
         if handle_keypress(self, key, context):
-            return key
+            return
         elif self.editing:
             if key in ['down', 'up']:
                 return None  # don't pass up or down to the ListBox
-            # elif self.key_bindings.is_bound_to(key, 'save-item'):
-            #     self.save_item()
-            #     return key
             else:
                 return self._w.keypress(size, key)
         else:

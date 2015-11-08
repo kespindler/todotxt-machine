@@ -69,17 +69,23 @@ class UrwidUI(object):
             lines -= 1
         return lines
 
-    def move_selection_down(self):
-        self.listbox.keypress((0, self.visible_lines()), 'down')
-
-    def move_selection_up(self):
-        self.listbox.keypress((0, self.visible_lines()), 'up')
-
-    def move_selection_top(self):
-        self.listbox.set_focus(0)
-
-    def move_selection_bottom(self):
-        self.listbox.set_focus(len(self.listbox.body)-1)
+    def move_selection(self, index=None, from_last=False, relative=None):
+        """
+        Example usage:
+        self.move_selection(0) puts you at the start
+        self.move_selection(from_last=True) puts you at the end
+        self.move_selection(relative=1) moves you forward one
+        self.move_selection(relative=-1) moves you back one
+        self.move_selection(from_last=True, relative=-1) puts you second to last
+        """
+        if index is None:
+            if from_last:
+                index = len(self.listbox.body) - 1
+            else:
+                index = self.listbox.get_focus()[1]
+        if relative:
+            index += relative
+        self.listbox.set_focus(index)
 
     def toggle_help_panel(self, button=None):
         if self.filter_panel_is_open:
@@ -152,7 +158,7 @@ class UrwidUI(object):
                 self.listbox.body[focus_index+1].todo = self.todos[focus_index+1]
                 self.listbox.body[focus_index].update_todo()
                 self.listbox.body[focus_index+1].update_todo()
-                self.move_selection_down()
+                self.move_selection(relative=1)
 
     def swap_up(self):
         focus, focus_index = self.listbox.get_focus()
@@ -163,7 +169,7 @@ class UrwidUI(object):
                 self.listbox.body[focus_index-1].todo = self.todos[focus_index-1]
                 self.listbox.body[focus_index].update_todo()
                 self.listbox.body[focus_index-1].update_todo()
-                self.move_selection_up()
+                self.move_selection(relative=-1)
 
     def save_todos(self, button=None):
         self.todos.save()
@@ -195,44 +201,30 @@ class UrwidUI(object):
         focus.update_todo()
         self.update_header()
 
+    def change_focus(self):
+        current_focus = self.frame.get_focus()
+        if current_focus == 'body':
+            if self.filter_panel_is_open and self.toolbar_is_open:
+                if self.view.focus_position == 1:
+                    self.view.focus_position = 0
+                    self.frame.focus_position = 'header'
+                elif self.view.focus_position == 0:
+                    self.view.focus_position = 1
+            elif self.toolbar_is_open:
+                self.frame.focus_position = 'header'
+            elif self.filter_panel_is_open:
+                if self.view.focus_position == 1:
+                    self.view.focus_position = 0
+                elif self.view.focus_position == 0:
+                    self.view.focus_position = 1
+        elif current_focus == 'header':
+            self.frame.focus_position = 'body'
+
     def keystroke(self, input):
         focus, focus_index = self.listbox.get_focus()
 
         if handle_keypress(self, input, 'listbox'):
             pass  # already handled
-        # Movement
-        elif self.key_bindings.is_bound_to(input, 'top'):
-            self.move_selection_top()
-        elif self.key_bindings.is_bound_to(input, 'bottom'):
-            self.move_selection_bottom()
-        elif self.key_bindings.is_bound_to(input, 'swap-down'):
-            self.swap_down()
-        elif self.key_bindings.is_bound_to(input, 'swap-up'):
-            self.swap_up()
-        elif self.key_bindings.is_bound_to(input, 'change-focus'):
-            current_focus = self.frame.get_focus()
-            if current_focus == 'body':
-
-                if self.filter_panel_is_open and self.toolbar_is_open:
-
-                    if self.view.focus_position == 1:
-                        self.view.focus_position = 0
-                        self.frame.focus_position = 'header'
-                    elif self.view.focus_position == 0:
-                        self.view.focus_position = 1
-
-                elif self.toolbar_is_open:
-                    self.frame.focus_position = 'header'
-
-                elif self.filter_panel_is_open:
-                    if self.view.focus_position == 1:
-                        self.view.focus_position = 0
-                    elif self.view.focus_position == 0:
-                        self.view.focus_position = 1
-
-            elif current_focus == 'header':
-                self.frame.focus_position = 'body'
-
         # Editing
         elif self.key_bindings.is_bound_to(input, 'toggle-complete'):
             if focus.todo.is_complete():
@@ -456,29 +448,10 @@ class UrwidUI(object):
                             'toggle-help', 'quit', 'toggle-toolbar', 'toggle-wrapping',
                             'toggle-borders', 'save', 'reload',
                         ]) +
-                        [urwid.AttrWrap(urwid.Text("""
-Movement
-""".strip()), header_highlight)] +
-                        [ urwid.Text("""
-{0} - select any todo, checkbox or button
-{1} - move selection down
-{2} - move selection up
-{3} - move selection to the top item
-{4} - move selection to the bottom item
-{5} - move selection between todos and filter panel
-{6}
-{7} - toggle focus between todos, filter panel, and toolbar
-""".format(
-                            "mouse click".ljust(key_column_width),
-                            self.key_bindings["down"         ].ljust(key_column_width),
-                            self.key_bindings["up"           ].ljust(key_column_width),
-                            self.key_bindings["top"          ].ljust(key_column_width),
-                            self.key_bindings["bottom"       ].ljust(key_column_width),
-                            self.key_bindings["left"         ].ljust(key_column_width),
-                            self.key_bindings["right"        ].ljust(key_column_width),
-                            self.key_bindings["change-focus" ].ljust(key_column_width),
-                        ))] +
-
+                        self.help_block('Movement', [
+                            'mouse click', 'down', 'up', 'top', 'bottom'
+                            'left', 'right', 'change-focus',
+                        ]) +
                         [ urwid.AttrWrap(urwid.Text("""
 Manipulating Todo Items
 """.strip()), header_highlight) ] +
