@@ -153,7 +153,7 @@ class TodoWidget(urwid.Button):
 
     def edit_item(self):
         self.editing = True
-        self.edit_widget = AdvancedEdit(self.parent_ui, self.key_bindings, caption="> ", edit_text=self.todo.raw)
+        self.edit_widget = AdvancedEdit(self.parent_ui, self.key_bindings, caption="> ", edit_text=self.todo.raw + ' ')
         self.edit_widget.setCompletionMethod(self.completions)
         self._w = urwid.AttrMap(self.edit_widget, 'plain_selected')
 
@@ -183,6 +183,7 @@ class TodoWidget(urwid.Button):
                 self.parent_ui.update_filters(new_contexts=self.todo.contexts, new_projects=self.todo.projects)
         else:
             self.parent_ui.delete_todo(self.todo.raw_index)
+        self.parent_ui.save_todos()
         self.editing = False
 
     def save_and_append(self):
@@ -841,9 +842,6 @@ While Editing a Todo
     self.key_bindings["edit-paste"            ].ljust(key_column_width),
 ))] +
 
-                [ urwid.AttrWrap(urwid.Text("""
-Sorting
-""".strip()), header_highlight) ] +
                 self.help_block('Sorting', ['toggle-sorting']) +
                 self.help_block('Filtering', ['toggle-filter', 'clear-filter']) +
                 self.help_block('Searching', ['search', 'search-end', 'search-clear'])
@@ -895,11 +893,13 @@ Sorting
         self.delete_todo_widgets()
         self.reload_todos_from_memory()
 
+        self.filter_results = []
         self.active_projects = []
         self.active_contexts = []
         self.filtering = False
         self.view.set_focus(0)
         self.update_filters()
+        self.update_header()
 
     def checkbox_clicked(self, checkbox, state, data):
         if state:
@@ -918,11 +918,13 @@ Sorting
             self.view.set_focus(0)
         else:
             self.clear_filters()
+        self.update_header()
 
     def filter_todo_list(self):
         self.delete_todo_widgets()
 
-        for t in self.todos.filter_contexts_and_projects(self.active_contexts, self.active_projects):
+        self.filter_results = list(self.todos.filter_contexts_and_projects(self.active_contexts, self.active_projects))
+        for t in self.filter_results:
             self.listbox.body.append( TodoWidget(t, self.key_bindings, self.colorscheme, self, wrapping=self.wrapping[0], border=self.border[0]) )
 
         self.filtering = True

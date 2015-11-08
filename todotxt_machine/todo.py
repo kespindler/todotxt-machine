@@ -3,7 +3,7 @@
 import re
 import random
 import urwid
-from datetime import date
+from datetime import date, timedelta
 import logging
 
 from todotxt_machine.terminal_operations import TerminalOperations
@@ -34,18 +34,28 @@ class Todo(object):
         raw = re.sub(Todos._priority_regex, '', raw)
         raw = re.sub(Todos._project_regex, '', raw)
         raw = re.sub(Todos._completed_regex, '', raw)
+        raw = re.sub(Todos._macro_regex, '', raw)
         return raw.strip()
 
+    def parse_macros(self, item):
+        for group in Todos._macro_regex.findall(item):
+            if group in ('!t', '!tod'):
+                self.due_date = str(date.today())
+            elif group == '!tom':
+                self.due_date = str(date.today() + timedelta(days=1))
+
     def update(self, item):
-        self.raw = item.strip()
+        self.raw = Todos._macro_regex.sub('', item).strip()
         self.priority = Todos.priority(item)
         self.contexts = Todos.contexts(item)
         self.projects = Todos.projects(item)
         self.creation_date = Todos.creation_date(item)
         self.due_date = Todos.due_date(item)
         self.completed_date = Todos.completed_date(item)
-        self.colored = self.highlight()
         self.body = self.get_body(self.raw)
+        self.parse_macros(item)
+        self.raw = self.build_raw()
+        self.colored = self.highlight()
 
     def __repr__(self):
         return repr({
@@ -120,7 +130,7 @@ class Todo(object):
             raw += '(%s) ' % self.priority
         raw += self.body
         if self.due_date:
-            raw += ' due:%s ' % self.due_date
+            raw += ' due:%s' % self.due_date
         if self.projects:
             raw += ' ' + ' '.join(self.projects)
         if self.contexts:
@@ -157,9 +167,10 @@ class Todos:
                                       r'(?:x \d\d\d\d-\d\d-\d\d )?'
                                       r'(?:\(\w\) )?'
                                       r'(\d\d\d\d-\d\d-\d\d)\s*')
-    _due_date_regex      = re.compile(r'\s*due:(\d\d\d\d-\d\d-\d\d)\s*')
+    _due_date_regex      = re.compile(r'\s*due:(\d\d\d\d-\d\d-\d\d)')
     _priority_regex      = re.compile(r'\(([A-Z])\) ')
     _completed_regex     = re.compile(r'^x (\d\d\d\d-\d\d-\d\d) ')
+    _macro_regex = re.compile(r'(!\S+)')
 
     def __init__(self, todo_items, file_path, archive_path):
         self.file_path = file_path
