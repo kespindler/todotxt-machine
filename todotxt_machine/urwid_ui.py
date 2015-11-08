@@ -5,7 +5,7 @@ import urwid
 import collections
 import logging
 
-logging.basicConfig(filename='~/.todotxt_machine.log', level=logging.INFO)
+logging.basicConfig(filename='.todotxt_machine.log', level=logging.INFO)
 
 log = logging.getLogger()
 
@@ -384,6 +384,8 @@ class UrwidUI(object):
         self.listbox = None
         self.search_box = None
 
+        self.filter_results = []
+
     def visible_lines(self):
         lines = self.loop.screen_size[1] - 1  # minus one for the header
         if self.toolbar_is_open:
@@ -628,14 +630,16 @@ class UrwidUI(object):
             self.update_header()
 
     def create_header(self, message=""):
+        todos = (self.filter_results or self.todos.todo_items) or []
+        done_todos = filter(lambda x: x.is_complete(), todos)
+        pending_todos = filter(lambda x: not x.is_complete(), todos)
         return urwid.AttrMap(
             urwid.Columns([
                 urwid.Text([
-                    ('header_todo_count', "{0} Todos ".format(self.todos.__len__())),
-                    ('header_todo_pending_count', " {0} Pending ".format(self.todos.pending_items_count())),
-                    ('header_todo_done_count', " {0} Done ".format(self.todos.done_items_count())),
+                    ('header_todo_count', "{0} Todos ".format(len(todos))),
+                    ('header_todo_pending_count', " {0} Pending ".format(len(pending_todos))),
+                    ('header_todo_done_count', " {0} Done ".format(len(done_todos))),
                 ]),
-                # urwid.Text( " todotxt-machine ", align='center' ),
                 urwid.Text(('header_file', "{0}  {1} ".format(message, self.todos.file_path)), align='right')
             ]), 'header')
 
@@ -682,7 +686,9 @@ class UrwidUI(object):
             self.delete_todo_widgets()
             self.searching = True
 
-            for t in self.todos.search(search_string, invert=invert):
+            self.filter_results = list(self.todos.search(search_string, invert=invert))
+
+            for t in self.filter_results:
                 self.listbox.body.append(TodoWidget(t, self.key_bindings, self.colorscheme, self, wrapping=self.wrapping[0], border=self.border[0]))
 
     def start_search(self):
@@ -697,6 +703,7 @@ class UrwidUI(object):
     def finalize_search(self):
         self.search_string = ''
         self.frame.set_focus('body')
+        self.update_header()
         for widget in self.listbox.body:
             widget.update_todo()
 
@@ -704,6 +711,8 @@ class UrwidUI(object):
         self.delete_todo_widgets()
         self.searching = False
         self.search_string = ''
+        self.filter_results = []
+        self.update_header()
         self.update_footer()
         self.reload_todos_from_memory()
 

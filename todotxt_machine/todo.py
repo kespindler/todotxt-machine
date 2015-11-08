@@ -242,7 +242,7 @@ class Todos:
         return self.todo_items[index]
 
     def __repr__(self):
-        return repr( [i for i in self.todo_items] )
+        return repr([i for i in self.todo_items])
 
     def create_todo(self, todo, index):
         return Todo(todo, index,
