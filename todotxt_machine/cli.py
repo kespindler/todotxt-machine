@@ -40,14 +40,16 @@ from docopt import docopt
 
 import todotxt_machine
 from todotxt_machine.todo import Todos
-from todotxt_machine.urwid_ui import UrwidUI
+from todotxt_machine.widgets.main import UrwidUI
 from todotxt_machine.colorscheme import ColorScheme
 from todotxt_machine.keys import KeyBindings
+
 
 def exit_with_error(message):
     sys.stderr.write(message.strip(' \n')+'\n')
     print(__doc__.split('\n\n')[1])
     exit(1)
+
 
 def get_real_path(filename, description):
     # expand enviroment variables and username, get canonical path

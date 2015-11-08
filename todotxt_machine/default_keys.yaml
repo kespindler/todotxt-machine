@@ -93,6 +93,10 @@ key_bindings:
     keys: W
     handler: listbox
     callback: clear_search_term
+  search-clear-while-editing:
+    keys: esc
+    handler: search
+    callback: clear_search_term
   search-inbox:
     tooltip: search for items without a project
     keys: I
