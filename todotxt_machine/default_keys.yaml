@@ -92,7 +92,7 @@ key_bindings:
     tooltip: clear search
     keys: W
     handler: listbox
-    callback: clear_filters
+    callback: clear_search_term
   search-inbox:
     tooltip: search for items without a project
     keys: I
