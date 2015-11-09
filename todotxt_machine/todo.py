@@ -216,6 +216,9 @@ class Todos:
             newtodo.add_creation_date()
         return index
 
+    def __contains__(self, item):
+        return item in self.todo_items
+
     def delete(self, index):
         item = self.todo_items[index]
         del self.todo_items[index]
@@ -338,7 +341,7 @@ class Todos:
         self.sorted(reversed_sort=True)
 
     def sorted_raw(self):
-        self.todo_items.sort( key=lambda todo: todo.raw_index )
+        self.todo_items.sort(key=lambda todo: todo.raw_index)
 
     def swap(self, first, second):
         """

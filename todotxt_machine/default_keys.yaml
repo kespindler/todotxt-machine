@@ -178,16 +178,6 @@ key_bindings:
     keys: X
     handler: listbox
     callback: archive_done_todos
-  delete:
-    tooltip: delete the selected todo
-    keys: delete
-    handler: listbox
-    callback: delete_todo
-  delete:
-    tooltip: delete the selected todo
-    keys: delete
-    handlers: listbox
-    callback: delete_todo
   append:
     tooltip: add a new todo to the end of the list
     keys: n
@@ -213,7 +203,7 @@ key_bindings:
     callback: edit_item
   delete:
     tooltip: delete the selected todo
-    keys: ['ctrl d']
+    keys: ['#']
     handler: listbox
     callback: delete_todo
   edit-todo-noop:
@@ -275,3 +265,9 @@ key_bindings:
     keys: ['ctrl y']
     handler: edit
     callback: edit_paste
+  move-30-down:
+    tooltip: move 50 lines down
+    keys: ['ctrl d']
+    handler: listbox
+    callback: move_selection
+    kwargs: {relative: 50}

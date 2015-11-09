@@ -24,6 +24,11 @@ class UrwidUI(object):
             hint='p',
             key=lambda x: x.priority or 'z',
         ),
+        dict(
+            name='Project',
+            hint='j',
+            key=lambda x: '' if not x.projects else x.projects[0],
+        ),
     ]
 
     def __init__(self, todos, key_bindings, colorscheme):
@@ -84,6 +89,8 @@ class UrwidUI(object):
                 index = self.listbox.get_focus()[1]
         if relative:
             index += relative
+        if index >= len(self.listbox.body):
+            index = len(self.listbox.body) - 1
         self.listbox.set_focus(index)
 
     def toggle_help_panel(self, button=None):
@@ -116,6 +123,8 @@ class UrwidUI(object):
         self.reload_todos_from_memory()
         self.move_selection(0)
         self.update_header()
+        if self.searching:
+            self.run_search(self.finalized_search_string)
 
     def toggle_filter_panel(self, button=None):
         if self.help_panel_is_open:
@@ -243,9 +252,12 @@ class UrwidUI(object):
         if self.todos.todo_items:
             item = self.todos.delete(index)
             if self.is_filtering():
-                filtered_index = self.filter_results.index(item)
-                del self.listbox.body[filtered_index]
-                del self.filter_results[filtered_index]
+                try:
+                    filtered_index = self.filter_results.index(item)
+                    del self.listbox.body[filtered_index]
+                    del self.filter_results[filtered_index]
+                except ValueError:
+                    pass
             else:
                 del self.listbox.body[index]
             self.update_header()
@@ -352,6 +364,9 @@ class UrwidUI(object):
         self.finalize_search()
 
     def finalize_search(self):
+        # TODO hack because this shouldn't be cleared...
+        if self.search_string:
+            self.finalized_search_string = self.search_string
         self.search_string = ''
         self.frame.set_focus('body')
         self.update_header()

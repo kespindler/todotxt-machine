@@ -1,24 +1,6 @@
 #!/usr/bin/env python
 # coding=utf-8
-
-"""todotxt-machine
-
-Usage:
-  todotxt-machine
-  todotxt-machine TODOFILE [DONEFILE]
-  todotxt-machine [--config FILE]
-  todotxt-machine (-h | --help)
-  todotxt-machine --version
-  todotxt-machine --show-default-bindings
-
-Options:
-  -c FILE --config=FILE               Path to your todotxt-machine configuraton file [default: ~/.todotxt-machinerc]
-  -h --help                           Show this screen.
-  --version                           Show version.
-  --show-default-bindings             Show default keybindings in config parser format
-                                      Add this to your config file and edit to customize
-"""
-
+import argparse
 import sys
 import os
 import random
@@ -36,10 +18,8 @@ elif sys.version_info[0] < 3:
     import ConfigParser
     config_parser_module = ConfigParser
 
-from docopt import docopt
-
 import todotxt_machine
-from todotxt_machine.todo import Todos
+from todotxt_machine.todo import Todos, Todo
 from todotxt_machine.widgets.main import UrwidUI
 from todotxt_machine.colorscheme import ColorScheme
 from todotxt_machine.keys import KeyBindings
@@ -73,8 +53,22 @@ def main():
     random.seed()
 
     # Parse command line
-    arguments = docopt(__doc__, version=todotxt_machine.version)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--todo', nargs='?')
+    parser.add_argument('--done', nargs='?')
+    parser.add_argument('--config', nargs='?', default='~/.todotxt-machinerc')
+    parser.add_argument('--version', action='version', version=todotxt_machine.version)
+    parser.add_argument('--show-default-bindings', action='store_true', default=False)
 
+    subparsers = parser.add_subparsers(dest='subparser_name', help='sub-command help')
+
+    subparser = subparsers.add_parser('curses')
+    subparser = subparsers.add_parser('add')
+    subparser.add_argument('body')
+
+    if len(sys.argv) == 1:
+        sys.argv.append('curses')
+    args = parser.parse_args()
     # Validate readline editing mode option (docopt doesn't handle this)
     # if arguments['--readline-editing-mode'] not in ['vi', 'emacs']:
     #     exit_with_error("--readline-editing-mode must be set to either vi or emacs\n")
@@ -83,36 +77,35 @@ def main():
     cfg = config_parser_module.ConfigParser(allow_no_value=True)
     cfg.add_section('keys')
 
-    if arguments['--show-default-bindings']:
-        d = {k: ", ".join(v['keys']) for k,v in KeyBindings({}).key_bindings.items()}
+    if args.show_default_bindings:
+        d = {k: ", ".join(v['keys']) for k, v in KeyBindings({}).key_bindings.items()}
         cfg._sections['keys'] = OrderedDict(sorted(d.items(), key=lambda t: t[0]))
         cfg.write(sys.stdout)
         exit(0)
 
     cfg.add_section('settings')
-    cfg.read(os.path.expanduser(arguments['--config']))
+    cfg.read(os.path.expanduser(args.config))
 
     # Load keybindings specified in the [keys] section of the config file
-    keyBindings = KeyBindings(dict( cfg.items('keys') ))
+    keyBindings = KeyBindings(dict(cfg.items('keys')))
 
     # load the colorscheme defined in the user config, else load the default scheme
-    colorscheme = ColorScheme(dict( cfg.items('settings') ).get('colorscheme', 'default'), cfg)
+    colorscheme = ColorScheme(dict(cfg.items('settings') ).get('colorscheme', 'default'), cfg)
 
     # Load the todo.txt file specified in the [settings] section of the config file
     # a todo.txt file on the command line takes precedence
-    todotxt_file = dict( cfg.items('settings') ).get('file', arguments['TODOFILE'])
-    if arguments['TODOFILE']:
-        todotxt_file = arguments['TODOFILE']
+    todotxt_file = dict(cfg.items('settings')).get('file', args.todo)
+    if args.todo:
+        todotxt_file = args.todo
 
     if todotxt_file is None:
         exit_with_error("ERROR: No todo file specified. Either specify one as an argument on the command line or set it in your configuration file ({0}).".format(arguments['--config']))
 
     # Load the done.txt file specified in the [settings] section of the config file
     # a done.txt file on the command line takes precedence
-    donetxt_file = dict( cfg.items('settings') ).get('archive', arguments['DONEFILE'])
-    if arguments['DONEFILE']:
-        donetxt_file = arguments['DONEFILE']
-
+    donetxt_file = dict(cfg.items('settings') ).get('archive', args.done)
+    if args.done:
+        donetxt_file = args.done
 
     todotxt_file_path = get_real_path(todotxt_file, 'todo.txt')
 
@@ -128,11 +121,15 @@ def main():
         exit_with_error("ERROR: unable to open {0}\n\nEither specify one as an argument on the command line or set it in your configuration file ({0}).".format(todotxt_file_path, arguments['--config']))
         todos = Todos([], todotxt_file_path, donetxt_file_path)
 
-    view = UrwidUI(todos, keyBindings, colorscheme)
-    view.main()
+    if args.subparser_name == 'curses':
+        view = UrwidUI(todos, keyBindings, colorscheme)
+        view.main()
+    if args.subparser_name == 'add':
+        todos.create_todo(args.body, 0)
+        idx = todos.append(args.body, False)
 
+    todos.save()
     # print("Writing: {0}".format(todotxt_file_path))
-    view.todos.save()
     exit(0)
 
 if __name__ == '__main__':
