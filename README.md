@@ -8,6 +8,8 @@ so that you can edit, filter, and update your todo.txt at lightning speed.
 I hacked on this because I had been searching for years for a serious GTD system with vim-like keybindings.
 I realized I could just modify an open source one to suit my needs.
 
+This is still being actively worked on, so pull requests are welcome.
+
 todotxt-machine is an interactive terminal based [todo.txt](http://todotxt.com/) file editor with an interface similar to [mutt](http://www.mutt.org/). It follows [the todo.txt
 format](https://github.com/ginatrapani/todo.txt-cli/wiki/The-Todo.txt-Format) and stores todo items in plain text.
 
