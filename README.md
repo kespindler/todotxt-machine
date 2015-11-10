@@ -1,6 +1,13 @@
 todotxt-machine
 ===============
 
+This is a fork of AnthonyDiGirolamo's excellent todotxt-machine.
+It makes the keyboard shortcut system dramatically easier to extend and hack, 
+so that you can edit, filter, and update your todo.txt at lightning speed.
+
+I hacked on this because I had been searching for years for a serious GTD system with vim-like keybindings.
+I realized I could just modify an open source one to suit my needs.
+
 todotxt-machine is an interactive terminal based [todo.txt](http://todotxt.com/) file editor with an interface similar to [mutt](http://www.mutt.org/). It follows [the todo.txt
 format](https://github.com/ginatrapani/todo.txt-cli/wiki/The-Todo.txt-Format) and stores todo items in plain text.
 
@@ -26,48 +33,20 @@ Requirements
 
 Python 2.7 or Python 3.4 on Linux or Mac OS X.
 
-todotxt-machine 1.1.8 and earlier drew its user interface using only raw
-terminal escape sequences. While this was very educational it was difficult to
-extend with new features. Version 2 and up uses
-[urwid](http://excess.org/urwid/) to draw its interface and is much more easily
-extendable.
+Todotxt-machine requires urwid, which is only supported on those systems.
 
 Installation
 ------------
 
-### Using [pip](https://pypi.python.org/pypi/pip)
+You have to install this fork from source:
+
+    git clone git@github.com:kespindler/todotxt-machine.git
+    cd todotxt-machine
+    python setup.py install
+
+Install the original version here:
 
     pip install todotxt-machine
-
-### Manually
-
-Download or clone this repo and run the `todotxt-machine.py` script.
-
-    git clone https://github.com/AnthonyDiGirolamo/todotxt-machine.git
-    cd todotxt-machine
-    ./todotxt-machine.py
-
-Command Line Options
---------------------
-
-    todotxt-machine
-
-    Usage:
-      todotxt-machine
-      todotxt-machine TODOFILE [DONEFILE]
-      todotxt-machine [--config FILE]
-      todotxt-machine (-h | --help)
-      todotxt-machine --version
-      todotxt-machine --show-default-bindings
-
-    Options:
-      -c FILE --config=FILE               Path to your todotxt-machine configuraton file [default: ~/.todotxt-machinerc]
-      -h --help                           Show this screen.
-      --version                           Show version.
-      --show-default-bindings             Show default keybindings in config parser format
-                                          Add this to your config file and edit to customize
-
-
 
 Config File
 -----------
@@ -159,6 +138,9 @@ Let me know if you make any good colorschemes and I'll add it to the default col
 
 Key Bindings
 ------------
+Read through the `default_keys.yaml` file for the keyboard shortcuts.
+They are mostly the same as Anthony's project, but with many additions and more natural workflow.
+The default keys are a cross between Gmail, Todoist, and vim.
 
 You can customize any key binding by adding a setting to the `[keys]` section of
 your config file `~/.todotxt-machinerc`.
