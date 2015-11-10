@@ -24,18 +24,19 @@ License
 """
 
 from setuptools import setup, find_packages
-from sys import version_info
 
 from setuptools.command.test import test as TestCommand
 import sys
+
 
 class PyTest(TestCommand):
     def finalize_options(self):
         TestCommand.finalize_options(self)
         self.test_args = []
         self.test_suite = True
+
     def run_tests(self):
-        #import here, cause outside the eggs aren't loaded
+        # import here, cause outside the eggs aren't loaded
         import pytest
         errno = pytest.main(self.test_args)
         sys.exit(errno)
@@ -76,7 +77,10 @@ setup(name=NAME,
           "Programming Language :: Python :: 3.3",
           "Topic :: Office/Business :: Scheduling",
       ],
-      install_requires=['setuptools', 'docopt>=0.6.2', 'urwid>=1.2.1'],
+      install_requires=['setuptools'] + open('requirements.txt').readlines(),
       tests_require=['pytest'],
-      cmdclass = {'test': PyTest},
+      cmdclass={'test': PyTest},
+      package_data={
+          '': ['*.yaml']
+      },
       )

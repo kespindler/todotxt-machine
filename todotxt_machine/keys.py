@@ -1,5 +1,5 @@
-import os.path as op
 import yaml
+from pkg_resources import resource_stream
 
 
 class KeyBindings:
@@ -21,8 +21,7 @@ class KeyBindings:
                 print("KeyBind \""+bind+"\" not found")
 
     def fill_with_defaults(self):
-        directory = op.dirname(__file__)
-        with open(op.join(directory, 'default_keys.yaml')) as f:
+        with resource_stream(__package__, 'default_keys.yaml') as f:
             config = yaml.load(f)
         for name, data in config['key_bindings'].iteritems():
             if isinstance(data['keys'], basestring):
