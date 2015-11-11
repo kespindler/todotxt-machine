@@ -1,7 +1,8 @@
 # coding=utf-8
 import logging
+import os.path as op
 
-logging.basicConfig(filename='.todotxt_machine.log', level=logging.INFO)
+logging.basicConfig(filename='/var/log/todotxt_machine.log', level=logging.INFO)
 
 log = logging.getLogger()
 
