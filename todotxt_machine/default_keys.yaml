@@ -33,7 +33,7 @@ key_bindings:
     tooltip: reload the todo file (discarding changes)
     keys: R
     handler: listbox
-    callback: reload_todos_from_mem
+    callback: reload_todos_from_memory
   toggle-sorting:
     keys: s
     handler: listbox
@@ -277,3 +277,8 @@ key_bindings:
     handler: listbox
     callback: move_selection
     kwargs: {relative: -50}
+  open-link:
+    tooltip: open link
+    keys: ['ctrl m']
+    handler: listbox
+    callback: todo_widget_clicked

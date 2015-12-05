@@ -1,6 +1,7 @@
 # coding=utf-8
-import collections
 import urwid
+import re
+import subprocess as sub
 from todotxt_machine.widgets.todo import TodoWidget
 from todotxt_machine.widgets.util import handle_keypress, log
 from todotxt_machine.widgets.search import SearchWidget
@@ -11,7 +12,7 @@ class UrwidUI(object):
     sort_options = [
         dict(
             name='Unsorted',
-            hint='nosort',
+            hint='-',
             key=None,
         ),
         dict(
@@ -30,11 +31,38 @@ class UrwidUI(object):
             key=lambda x: '' if not x.projects else x.projects[0],
         ),
     ]
+    display_options = [
+        dict(
+            name='Todotxt',
+            hint='-',
+            display='no border',
+        ),
+        dict(
+            name='Border',
+            hint='bord',
+            display='bordered',
+        ),
+        dict(
+            name='Tree',
+            hint=u'\U0001F332 ',
+            display='tree',
+        ),
+    ]
+    wrap_options = [
+        dict(
+            name='Clip',
+            display='clip',
+        ),
+        dict(
+            name='Wrap',
+            display='space',
+        ),
+    ]
 
     def __init__(self, todos, key_bindings, colorscheme):
-        self.wrapping = collections.deque(['clip', 'space'])
-        self.border = collections.deque(['no border', 'bordered'])
-        self.sort_order = 0
+        self.sort_order = 3
+        self.display_style = 2
+        self.wrap_style = 0
 
         self.todos = todos
         self.displayed_todos = []
@@ -74,6 +102,12 @@ class UrwidUI(object):
         if self.searching:
             lines -= 1
         return lines
+
+    def todo_widget_clicked(self, widget):
+        body = widget.todo.body
+        match = re.search('(\w+://[^\s]+)', body)
+        if match:
+            sub.call(['open', match.group(1)])
 
     def move_selection(self, index=None, from_last=False, relative=None):
         """
@@ -140,22 +174,22 @@ class UrwidUI(object):
             self.filter_panel = self.create_filter_panel()
             self.view.contents.append((self.filter_panel, self.view.options(width_type='weight', width_amount=1)))
             self.filter_panel_is_open = True
+            self.change_focus()
 
     def toggle_wrapping(self, checkbox=None, state=None):
-        self.wrapping.rotate(1)
-        for widget in self.listbox.body:
-            widget.wrapping = self.wrapping[0]
-            widget.update_todo()
-        if self.toolbar_is_open:
-            self.update_header()
+        self.wrap_style = (self.wrap_style + 1) % len(self.wrap_options)
+        self.delete_todo_widgets()
+        self.draw_list()
+        self.update_header()
+
+    def project_widget_clicked(self):
+        pass
 
     def toggle_border(self, checkbox=None, state=None):
-        self.border.rotate(1)
-        for widget in self.listbox.body:
-            widget.border = self.border[0]
-            widget.update_todo()
-        if self.toolbar_is_open:
-            self.update_header()
+        self.display_style = (self.display_style + 1) % len(self.display_options)
+        self.delete_todo_widgets()
+        self.draw_list()
+        self.update_header()
 
     def toggle_toolbar(self):
         self.toolbar_is_open = not self.toolbar_is_open
@@ -196,12 +230,9 @@ class UrwidUI(object):
 
     def reload_todos_from_file(self, button=None):
         self.delete_todo_widgets()
-
         self.todos.reload_from_file()
-
-        for t in self.todos.todo_items:
-            self.listbox.body.append(TodoWidget(t, self.key_bindings, self.colorscheme, self, wrapping=self.wrapping[0], border=self.border[0]) )
-
+        self.reload_todos_from_memory()
+        self.draw_list()
         self.update_header("Reloaded")
 
     def quit(self):
@@ -275,86 +306,71 @@ class UrwidUI(object):
         if self.filtering:
             position = 'append'
 
+        wrap = self.wrap_options[self.wrap_style]['display']
+        border = self.display_options[self.display_style]['display']
         if position == 'append':
             new_index = self.todos.append('', add_creation_date=False)
-            self.listbox.body.append(TodoWidget(self.todos[new_index], self.key_bindings, self.colorscheme, self, editing=True, wrapping=self.wrapping[0], border=self.border[0]))
+            self.listbox.body.append(TodoWidget(self.todos[new_index], self.key_bindings, self.colorscheme, self,
+                                                editing=True, wrapping=wrap, border=border))
         else:
             if position == 'insert_after':
                 new_index = self.todos.insert(focus_index+1, '', add_creation_date=False)
             elif position == 'insert_before':
                 new_index = self.todos.insert(focus_index, '', add_creation_date=False)
-
-            self.listbox.body.insert(new_index, TodoWidget(self.todos[new_index], self.key_bindings, self.colorscheme, self, editing=True, wrapping=self.wrapping[0], border=self.border[0]))
+            self.listbox.body.insert(new_index, TodoWidget(self.todos[new_index], self.key_bindings, self.colorscheme, self,
+                                                           editing=True, wrapping=wrap, border=border))
 
         if position:
             if self.filtering:
                 self.listbox.set_focus(len(self.listbox.body)-1)
             else:
                 self.listbox.set_focus(new_index)
-            # edit_widget = self.listbox.body[new_index]._w
-            # edit_widget.edit_text += ' '
-            # edit_widget.set_edit_pos(len(self.todos[new_index].raw) + 1)
             self.update_header()
 
     def create_header(self, message=""):
-        todos = (self.filter_results or self.todos.todo_items) or []
-        done_todos = filter(lambda x: x.is_complete(), todos)
-        pending_todos = filter(lambda x: not x.is_complete(), todos)
+        total = 0
+        done = 0
+        pending = 0
+        for t in self.displayed_todos:
+            total += 1
+            if t.is_complete():
+                done += 1
+            else:
+                pending += 1
+
         return urwid.AttrMap(
             urwid.Columns([
                 urwid.Text([
-                    ('header_todo_count', "{0} Todos ".format(len(todos))),
-                    ('header_todo_pending_count', " {0} Pending ".format(len(pending_todos))),
-                    ('header_todo_done_count', " {0} Done ".format(len(done_todos))),
+                    ('header_todo_count', "{0} Todos ".format(total)),
+                    ('header_todo_pending_count', " {0} Pending ".format(pending)),
+                    ('header_todo_done_count', " {0} Done ".format(done)),
                     ('header', ' ' + ' '.join([
-                        'wrap' if self.wrapping else ' ',
-                        'border' if self.border else ' ',
+                        self.wrap_options[self.wrap_style]['display'],
+                        self.display_options[self.display_style]['hint'],
                         self.sort_hint(),
                     ])),
                 ]),
-                urwid.Text(('header_file', "{0}  {1} ".format(message, self.todos.file_path)), align='right')
+                urwid.Text(('header_file', "{0} {1} ".format(message, self.todos.file_path)), align='right')
             ]), 'header')
-
-    def is_wrapping(self):
-        return self.wrapping[0] == 'space'
-
-    def is_bordered(self):
-        return self.border[0] == 'bordered'
 
     def sort_hint(self):
         return self.sort_options[self.sort_order]['hint']
 
     def create_toolbar(self):
-        return urwid.AttrMap(urwid.Columns([
-            urwid.Padding(
+        def button(name, on_press):
+            return urwid.Padding(
                 urwid.AttrMap(
-                    urwid.CheckBox([('header_file', 'w'), 'ord wrap'], state=self.is_wrapping(), on_state_change=self.toggle_wrapping),
-                    'header', 'plain_selected'), right=2 ),
-
-            urwid.Padding(
-                urwid.AttrMap(
-                    urwid.CheckBox([('header_file', 'b'), 'orders'], state=self.is_bordered(), on_state_change=self.toggle_border),
-                    'header', 'plain_selected'), right=2 ),
-
-            urwid.Padding(
-                urwid.AttrMap(
-                    urwid.Button([('header_file', 'R'), 'eload'], on_press=self.reload_todos_from_file),
-                    'header', 'plain_selected'), right=2 ),
-
-            urwid.Padding(
-                urwid.AttrMap(
-                    urwid.Button([('header_file', 'S'), 'ave'], on_press=self.save_todos),
-                    'header', 'plain_selected'), right=2 ),
-
-            urwid.Padding(
-                urwid.AttrMap(
-                    urwid.Button([('header_file', 's'), 'ort: '+self.sort_hint()], on_press=self.toggle_sorting),
-                    'header', 'plain_selected'), right=2),
-
-            urwid.Padding(
-                urwid.AttrMap(
-                    urwid.Button([('header_file', 'f'), 'ilter'], on_press=self.toggle_filter_panel),
-                    'header', 'plain_selected'), right=2)
+                    urwid.Button(name, on_press=on_press),
+                    'header', 'plain_selected'
+                ), right=2
+            )
+        return urwid.AttrMap(urwid.Columns(button(name, cb) for name, cb in [
+            ('word wrap', self.toggle_wrapping),
+            ('border', self.toggle_border),
+            ([('header_file', 'R'), 'eload'], self.toggle_wrapping),
+            ([('header_file', 'S'), 'ave'], self.save_todos),
+            ([('header_file', 's'), 'ort: ' + self.sort_hint()], self.save_todos),
+            ([('header_file', 'f'), 'ilter'], self.toggle_filter_panel),
         ]), 'header')
 
     def search_box_updated(self, edit_widget, new_contents):
@@ -366,10 +382,8 @@ class UrwidUI(object):
             self.delete_todo_widgets()
             self.searching = True
 
-            self.filter_results = list(self.todos.search(search_string, invert=invert))
-
-            for t in self.filter_results:
-                self.listbox.body.append(TodoWidget(t, self.key_bindings, self.colorscheme, self, wrapping=self.wrapping[0], border=self.border[0]))
+            self.displayed_todos = list(self.todos.search(search_string, invert=invert))
+            self.draw_list()
 
     def start_search(self):
         self.searching = True
@@ -516,10 +530,21 @@ class UrwidUI(object):
             self.listbox.body.pop(i)
 
     def draw_list(self):
+        wrap = self.wrap_options[self.wrap_style]['display']
+        border = self.display_options[self.display_style]['display']
+        project_sort = self.sort_options[self.sort_order]['name'] == 'Project'
+        last_project = None
+        if border == 'tree' and not project_sort:
+            border = 'no border'
         for t in self.displayed_todos:
+            if border == 'tree' and t.projects:
+                project = t.projects[0]
+                if project != last_project:
+                    self.listbox.body.append(urwid.Text(('project', project)))
+                last_project = project
             self.listbox.body.append(TodoWidget(t, self.key_bindings, self.colorscheme, self,
-                                                wrapping=self.wrapping[0],
-                                                border=self.border[0]))
+                                                wrapping=wrap,
+                                                border=border))
 
     def reload_todos_from_memory(self):
         self.displayed_todos = self.todos.todo_items
@@ -546,13 +571,9 @@ class UrwidUI(object):
 
     def filter_todo_list(self):
         self.delete_todo_widgets()
-
-        self.filter_results = list(self.todos.filter_contexts_and_projects(self.active_contexts, self.active_projects))
-        for t in self.filter_results:
-            self.listbox.body.append(TodoWidget(t, self.key_bindings, self.colorscheme, self,
-                                                wrapping=self.wrapping[0], border=self.border[0]))
-
+        self.displayed_todos = list(self.todos.filter_contexts_and_projects(self.active_contexts, self.active_projects))
         self.filtering = True
+        self.draw_list()
 
     def update_filters(self, new_contexts=None, new_projects=None):
         if self.active_contexts and new_contexts:
@@ -573,15 +594,16 @@ class UrwidUI(object):
         else:
             self.frame.header = self.create_header(message)
 
-    def update_footer(self, message=""):
+    def update_footer(self, message=''):
         self.frame.footer = self.create_footer()
 
     def main(self):
-        self.header = self.create_header()
-        self.footer = self.create_footer()
+        urwid.set_encoding('UTF-8')
 
         self.listbox = ViListBox(self.key_bindings, urwid.SimpleListWalker([]))
         self.reload_todos_from_memory()
+        self.header = self.create_header()
+        self.footer = self.create_footer()
 
         self.frame = urwid.Frame(urwid.AttrMap(self.listbox, 'plain'), header=self.header, footer=self.footer)
 
@@ -592,3 +614,4 @@ class UrwidUI(object):
         self.loop = urwid.MainLoop(self.view, self.palette, unhandled_input=self.keystroke)
         self.loop.screen.set_terminal_properties(colors=256)
         self.loop.run()
+

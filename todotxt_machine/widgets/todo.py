@@ -5,6 +5,20 @@ from todotxt_machine.widgets.edit import AdvancedEdit
 from todotxt_machine.widgets.util import handle_keypress
 
 
+class ProjectHeaderWidget(urwid.Button):
+    def __init__(self, todo, key_bindings, colorscheme, parent_ui, editing=False, wrapping='clip', border='no border'):
+        super(ProjectHeaderWidget, self).__init__('')
+        self.todo = todo
+        self.key_bindings = key_bindings
+        self.wrapping = wrapping
+        self.border = border
+        self.colorscheme = colorscheme
+        self.parent_ui = parent_ui
+        self.editing = editing
+        self.edit_widget = None
+        urwid.connect_signal(self, 'click', parent_ui.project_widget_clicked)
+
+
 class TodoWidget(urwid.Button):
     def __init__(self, todo, key_bindings, colorscheme, parent_ui, editing=False, wrapping='clip', border='no border'):
         super(TodoWidget, self).__init__("")
@@ -16,6 +30,7 @@ class TodoWidget(urwid.Button):
         self.parent_ui = parent_ui
         self.editing = editing
         self.edit_widget = None
+        urwid.connect_signal(self, 'click', parent_ui.todo_widget_clicked)
         if editing:
             self.edit_item()
         else:
@@ -27,11 +42,10 @@ class TodoWidget(urwid.Button):
     def update_todo(self):
         if self.parent_ui.searching and self.parent_ui.search_string:
             text = urwid.Text(self.todo.highlight_search_matches(), wrap=self.wrapping)
+        elif self.border == 'bordered':
+            text = urwid.Text(self.todo.highlight(show_due_date=False, show_contexts=False, show_projects=False), wrap=self.wrapping)
         else:
-            if self.border == 'bordered':
-                text = urwid.Text(self.todo.highlight(show_due_date=False, show_contexts=False, show_projects=False), wrap=self.wrapping)
-            else:
-                text = urwid.Text(self.todo.colored, wrap=self.wrapping)
+            text = urwid.Text(self.todo.colored, wrap=self.wrapping)
 
         if self.border == 'bordered':
             lt = ''
@@ -44,9 +58,16 @@ class TodoWidget(urwid.Button):
                 t.append(' ')
             t.append(('project', ' '.join(self.todo.projects)))
             bc = 'plain'
-            if self.todo.priority and self.todo.priority in "ABCDEF":
+            if self.todo.priority and self.todo.priority in 'ABCDEF':
                 bc = "priority_{0}".format(self.todo.priority.lower())
-            text = TodoLineBox(text, top_left_title=lt, bottom_right_title=t, border_color=bc, )
+            text = TodoLineBox(text, top_left_title=lt, bottom_right_title=t, border_color=bc,)
+        elif self.border == 'tree':
+            if self.todo.projects:
+                project = self.todo.projects[0]
+                depth = project.count('.')
+                colored_list = self.todo.highlight(show_projects=False)
+                colored_list[1][0] = u'    ' * (depth+1) + colored_list[1][0]
+                text = urwid.Text(colored_list, wrap=self.wrapping)
         self._w = urwid.AttrMap(urwid.AttrMap(text, None, 'selected'),
                                 None, self.colorscheme.focus_map)
 
@@ -100,6 +121,16 @@ class TodoWidget(urwid.Button):
             return self._w.keypress(size, key)
         else:
             return key
+
+
+class TodoProjectBox(urwid.WidgetDecoration, urwid.WidgetWrap):
+    def __init__(self, original_widget, project):
+        # TODO replace with rpoject header widget
+        project_widget = urwid.Text(('project', project))
+        pile = urwid.Pile([('flow', project_widget), original_widget], focus_item=1)
+
+        urwid.WidgetDecoration.__init__(self, original_widget)
+        urwid.WidgetWrap.__init__(self, pile)
 
 
 class TodoLineBox(urwid.WidgetDecoration, urwid.WidgetWrap):
