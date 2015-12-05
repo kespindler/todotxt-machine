@@ -11,22 +11,22 @@ class UrwidUI(object):
     sort_options = [
         dict(
             name='Unsorted',
-            hint='-',
+            hint='nosort',
             key=None,
         ),
         dict(
             name='Due Date',
-            hint='d',
+            hint='due',
             key=lambda x: x.due_date or '9999-99-99',
         ),
         dict(
             name='Priority',
-            hint='p',
+            hint='pri',
             key=lambda x: x.priority or 'z',
         ),
         dict(
             name='Project',
-            hint='j',
+            hint='proj',
             key=lambda x: '' if not x.projects else x.projects[0],
         ),
     ]
@@ -37,6 +37,7 @@ class UrwidUI(object):
         self.sort_order = 0
 
         self.todos = todos
+        self.displayed_todos = []
         self.key_bindings = key_bindings
 
         self.colorscheme = colorscheme
@@ -64,6 +65,7 @@ class UrwidUI(object):
         self.search_box = None
 
         self.filter_results = []
+        self.finalized_search_string = None
 
     def visible_lines(self):
         lines = self.loop.screen_size[1] - 1  # minus one for the header
@@ -91,6 +93,8 @@ class UrwidUI(object):
             index += relative
         if index >= len(self.listbox.body):
             index = len(self.listbox.body) - 1
+        elif index < 0:
+            index = 0
         self.listbox.set_focus(index)
 
     def toggle_help_panel(self, button=None):
@@ -247,7 +251,7 @@ class UrwidUI(object):
 
     def delete_todo(self, index=None):
         if index is None:
-            focus, focus_index = self.listbox.get_focus()
+            focus, _ = self.listbox.get_focus()
             index = focus.todo.raw_index
         if self.todos.todo_items:
             item = self.todos.delete(index)
@@ -302,20 +306,34 @@ class UrwidUI(object):
                     ('header_todo_count', "{0} Todos ".format(len(todos))),
                     ('header_todo_pending_count', " {0} Pending ".format(len(pending_todos))),
                     ('header_todo_done_count', " {0} Done ".format(len(done_todos))),
+                    ('header', ' ' + ' '.join([
+                        'wrap' if self.wrapping else ' ',
+                        'border' if self.border else ' ',
+                        self.sort_hint(),
+                    ])),
                 ]),
                 urwid.Text(('header_file', "{0}  {1} ".format(message, self.todos.file_path)), align='right')
             ]), 'header')
+
+    def is_wrapping(self):
+        return self.wrapping[0] == 'space'
+
+    def is_bordered(self):
+        return self.border[0] == 'bordered'
+
+    def sort_hint(self):
+        return self.sort_options[self.sort_order]['hint']
 
     def create_toolbar(self):
         return urwid.AttrMap(urwid.Columns([
             urwid.Padding(
                 urwid.AttrMap(
-                    urwid.CheckBox([('header_file', 'w'), 'ord wrap'], state=(self.wrapping[0] == 'space'), on_state_change=self.toggle_wrapping),
+                    urwid.CheckBox([('header_file', 'w'), 'ord wrap'], state=self.is_wrapping(), on_state_change=self.toggle_wrapping),
                     'header', 'plain_selected'), right=2 ),
 
             urwid.Padding(
                 urwid.AttrMap(
-                    urwid.CheckBox([('header_file', 'b'), 'orders'], state=(self.border[0] == 'bordered'), on_state_change=self.toggle_border),
+                    urwid.CheckBox([('header_file', 'b'), 'orders'], state=self.is_bordered(), on_state_change=self.toggle_border),
                     'header', 'plain_selected'), right=2 ),
 
             urwid.Padding(
@@ -330,17 +348,16 @@ class UrwidUI(object):
 
             urwid.Padding(
                 urwid.AttrMap(
-                    urwid.Button([('header_file', 's'), 'ort: '+self.sort_options[self.sort_order]['hint']], on_press=self.toggle_sorting),
+                    urwid.Button([('header_file', 's'), 'ort: '+self.sort_hint()], on_press=self.toggle_sorting),
                     'header', 'plain_selected'), right=2),
 
             urwid.Padding(
                 urwid.AttrMap(
                     urwid.Button([('header_file', 'f'), 'ilter'], on_press=self.toggle_filter_panel),
-                    'header', 'plain_selected'), right=2 )
+                    'header', 'plain_selected'), right=2)
         ]), 'header')
 
     def search_box_updated(self, edit_widget, new_contents):
-        old_contents = edit_widget.edit_text
         self.search_string = new_contents
         self.search_todo_list(self.search_string)
 
@@ -468,18 +485,18 @@ class UrwidUI(object):
                     [
                         ViPile(
                             self.key_bindings,
-                            [ urwid.Text('Contexts & Projects', align='center') ] +
-                            [ urwid.Divider(u'─') ] +
+                            [urwid.Text('Contexts & Projects', align='center')] +
+                            [urwid.Divider(u'─')] +
                             [urwid.AttrWrap(urwid.CheckBox(c, state=(c in self.active_contexts), on_state_change=self.checkbox_clicked, user_data=['context', c]), 'context_dialog_color', 'context_selected') for c in self.todos.all_contexts()] +
-                            [ urwid.Divider(u'─') ] +
+                            [urwid.Divider(u'─')] +
                             [urwid.AttrWrap(urwid.CheckBox(p, state=(p in self.active_projects), on_state_change=self.checkbox_clicked, user_data=['project', p]), 'project_dialog_color', 'project_selected') for p in self.todos.all_projects()] +
-                            [ urwid.Divider(u'─') ] +
-                            [ urwid.AttrMap(urwid.Button(['Clear ', ('header_file_dialog_color','F'), 'ilters'], on_press=self.clear_filters), 'dialog_color', 'plain_selected') ]
+                            [urwid.Divider(u'─')] +
+                            [urwid.AttrMap(urwid.Button(['Clear ', ('header_file_dialog_color','F'), 'ilters'], on_press=self.clear_filters), 'dialog_color', 'plain_selected') ]
                         )
                     ] +
-                    [ urwid.Divider() ],
+                    [urwid.Divider()],
                     ),
-                left=1, right=1, min_width=10 )
+                left=1, right=1, min_width=10)
             ,
             'dialog_color')
 
@@ -498,10 +515,15 @@ class UrwidUI(object):
         for i in range(len(self.listbox.body)-1, -1, -1):
             self.listbox.body.pop(i)
 
-    def reload_todos_from_memory(self):
-        for t in self.todos.todo_items:
+    def draw_list(self):
+        for t in self.displayed_todos:
             self.listbox.body.append(TodoWidget(t, self.key_bindings, self.colorscheme, self,
-                                                wrapping=self.wrapping[0], border=self.border[0]))
+                                                wrapping=self.wrapping[0],
+                                                border=self.border[0]))
+
+    def reload_todos_from_memory(self):
+        self.displayed_todos = self.todos.todo_items
+        self.draw_list()
 
     def checkbox_clicked(self, checkbox, state, data):
         if state:
@@ -558,9 +580,8 @@ class UrwidUI(object):
         self.header = self.create_header()
         self.footer = self.create_footer()
 
-        self.listbox = ViListBox(self.key_bindings, urwid.SimpleListWalker(
-            [TodoWidget(t, self.key_bindings, self.colorscheme, self) for t in self.todos.todo_items]
-        ))
+        self.listbox = ViListBox(self.key_bindings, urwid.SimpleListWalker([]))
+        self.reload_todos_from_memory()
 
         self.frame = urwid.Frame(urwid.AttrMap(self.listbox, 'plain'), header=self.header, footer=self.footer)
 

@@ -265,9 +265,15 @@ key_bindings:
     keys: ['ctrl y']
     handler: edit
     callback: edit_paste
-  move-30-down:
+  move-50-down:
     tooltip: move 50 lines down
     keys: ['ctrl d']
     handler: listbox
     callback: move_selection
     kwargs: {relative: 50}
+  move-50-up:
+    tooltip: move 50 lines up
+    keys: ['ctrl u']
+    handler: listbox
+    callback: move_selection
+    kwargs: {relative: -50}

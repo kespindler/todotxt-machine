@@ -16,7 +16,6 @@ class TodoWidget(urwid.Button):
         self.parent_ui = parent_ui
         self.editing = editing
         self.edit_widget = None
-        # urwid.connect_signal(self, 'click', callback)
         if editing:
             self.edit_item()
         else:
