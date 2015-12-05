@@ -29,7 +29,14 @@ class UrwidUI(object):
             name='Project',
             hint='proj',
             key=lambda x: '' if not x.projects else x.projects[0],
+            allow_tree=True,
         ),
+        dict(
+            name='Natural',
+            hint='nat',
+            key=None,
+            allow_tree=True,
+        )
     ]
     display_options = [
         dict(
@@ -60,7 +67,7 @@ class UrwidUI(object):
     ]
 
     def __init__(self, todos, key_bindings, colorscheme):
-        self.sort_order = 3
+        self.sort_order = 4
         self.display_style = 2
         self.wrap_style = 0
 
@@ -149,15 +156,23 @@ class UrwidUI(object):
             # for header_column in self.frame.header.original_widget.contents:
             #     header_column[0].set_wrap_mode('clip')
 
+    def run_sort(self):
+        sort = self.sort_options[self.sort_order]
+        if sort['hint'] == 'nat':
+            self.todos.sorted(key=self.sort_options[2]['key'])  # pri
+            self.todos.sorted(key=self.sort_options[1]['key'])  # due
+            self.todos.sorted(key=self.sort_options[3]['key'])  # proj
+        elif sort['key'] is None:
+            self.todos.sorted_raw()
+        else:
+            self.todos.sorted(key=sort['key'])
+
     def toggle_sorting(self, button=None):
         self.delete_todo_widgets()
 
         self.sort_order = (self.sort_order + 1) % len(self.sort_options)
-        sort = self.sort_options[self.sort_order]
-        if sort['key'] is None:
-            self.todos.sorted_raw()
-        else:
-            self.todos.sorted(key=sort['key'])
+        self.run_sort()
+
         self.reload_todos_from_memory()
         self.move_selection(0)
         self.update_header()
@@ -200,22 +215,18 @@ class UrwidUI(object):
         if not self.filtering and not self.searching:
             if focus_index+1 < len(self.listbox.body):
                 self.todos.swap(focus_index, focus_index + 1)
-                self.listbox.body[focus_index].todo = self.todos[focus_index]
-                self.listbox.body[focus_index+1].todo = self.todos[focus_index+1]
-                self.listbox.body[focus_index].update_todo()
-                self.listbox.body[focus_index+1].update_todo()
-                self.move_selection(relative=1)
+                self.delete_todo_widgets()
+                self.draw_list()
+                self.move_selection(focus_index + 1)
 
     def swap_up(self):
         focus, focus_index = self.listbox.get_focus()
         if not self.filtering and not self.searching:
             if focus_index > 0:
                 self.todos.swap(focus_index, focus_index - 1)
-                self.listbox.body[focus_index].todo = self.todos[focus_index]
-                self.listbox.body[focus_index-1].todo = self.todos[focus_index-1]
-                self.listbox.body[focus_index].update_todo()
-                self.listbox.body[focus_index-1].update_todo()
-                self.move_selection(relative=-1)
+                self.delete_todo_widgets()
+                self.draw_list()
+                self.move_selection(focus_index - 1)
 
     def save_todos(self, button=None):
         self.todos.save()
@@ -532,7 +543,7 @@ class UrwidUI(object):
     def draw_list(self):
         wrap = self.wrap_options[self.wrap_style]['display']
         border = self.display_options[self.display_style]['display']
-        project_sort = self.sort_options[self.sort_order]['name'] == 'Project'
+        project_sort = self.sort_options[self.sort_order].get('allow_tree', False)
         last_project = None
         if border == 'tree' and not project_sort:
             border = 'no border'
@@ -545,6 +556,16 @@ class UrwidUI(object):
             self.listbox.body.append(TodoWidget(t, self.key_bindings, self.colorscheme, self,
                                                 wrapping=wrap,
                                                 border=border))
+
+    def refresh(self):
+        todo, index = self.listbox.get_focus()
+        self.displayed_todos = self.todos.todo_items
+        self.run_sort()
+        self.delete_todo_widgets()
+        self.draw_list()
+        for i, widget in enumerate(self.listbox.body):
+            if isinstance(widget, TodoWidget) and widget.todo == todo.todo:
+                self.listbox.set_focus(i)
 
     def reload_todos_from_memory(self):
         self.displayed_todos = self.todos.todo_items
@@ -602,6 +623,7 @@ class UrwidUI(object):
 
         self.listbox = ViListBox(self.key_bindings, urwid.SimpleListWalker([]))
         self.reload_todos_from_memory()
+        self.run_sort()
         self.header = self.create_header()
         self.footer = self.create_footer()
 
@@ -614,4 +636,3 @@ class UrwidUI(object):
         self.loop = urwid.MainLoop(self.view, self.palette, unhandled_input=self.keystroke)
         self.loop.screen.set_terminal_properties(colors=256)
         self.loop.run()
-
