@@ -291,21 +291,17 @@ class UrwidUI(object):
     def is_filtering(self):
         return self.searching or self.filtering
 
-    def delete_todo(self, index=None):
-        if index is None:
-            focus, _ = self.listbox.get_focus()
-            index = focus.todo.raw_index
+    def delete_todo(self, _=None):
+        focus, display_index = self.listbox.get_focus()
         if self.todos.todo_items:
-            item = self.todos.delete(index)
+            item = self.todos.delete(focus.todo)
+            del self.listbox.body[display_index]
             if self.is_filtering():
                 try:
                     filtered_index = self.filter_results.index(item)
-                    del self.listbox.body[filtered_index]
                     del self.filter_results[filtered_index]
                 except ValueError:
                     pass
-            else:
-                del self.listbox.body[index]
             self.update_header()
 
     def add_new_todo(self, position=False):
@@ -551,7 +547,8 @@ class UrwidUI(object):
             if border == 'tree' and t.projects:
                 project = t.projects[0]
                 if project != last_project:
-                    self.listbox.body.append(urwid.Text(('project', project)))
+                    depth = project.count('.')
+                    self.listbox.body.append(urwid.Text(('project', '    ' * depth + project)))
                 last_project = project
             self.listbox.body.append(TodoWidget(t, self.key_bindings, self.colorscheme, self,
                                                 wrapping=wrap,

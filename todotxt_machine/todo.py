@@ -5,7 +5,7 @@ import random
 from datetime import date, timedelta
 import logging
 
-log = logging.getLogger()
+logger = logging.getLogger()
 
 
 class Todo(object):
@@ -14,7 +14,6 @@ class Todo(object):
     def __init__(self, item, index, priority='', contexts=None, projects=None,
                  creation_date=None, due_date=None, completed_date=None):
         self.raw = item.strip()  # todo deprecate
-        self.raw_index = index
         self.creation_date = creation_date
         self.priority = priority
         self.contexts = contexts or []
@@ -62,7 +61,6 @@ class Todo(object):
         return repr({
             "raw":            self.raw,
             "colored":        self.colored,
-            "raw_index":      self.raw_index,
             "priority":       self.priority,
             "contexts":       self.contexts,
             "projects":       self.projects,
@@ -203,8 +201,7 @@ class Todos:
         return len(self.todo_items)-1
 
     def insert(self, index, item, add_creation_date=True):
-        self.todo_items.insert(index, self.create_todo(item, index) )
-        self.update_raw_indices()
+        self.todo_items.insert(index, self.create_todo(item, index))
         newtodo = self.todo_items[index]
         if add_creation_date and newtodo.creation_date == "":
             newtodo.add_creation_date()
@@ -213,11 +210,14 @@ class Todos:
     def __contains__(self, item):
         return item in self.todo_items
 
-    def delete(self, index):
-        item = self.todo_items[index]
-        del self.todo_items[index]
-        self.update_raw_indices()
-        return item
+    def delete(self, todo):
+        try:
+            idx = self.todo_items.index(todo)
+        except ValueError:
+            return
+        logger.info('Deleting %s' % todo.raw)
+        del self.todo_items[idx]
+        return todo
 
     def __iter__(self):
         self.index = -1
@@ -269,10 +269,6 @@ class Todos:
         self.todo_items = [self.create_todo(todo, i)
                            for i, todo in enumerate(raw_items)
                            if todo.strip()]
-
-    def update_raw_indices(self):
-        for index, todo in enumerate(self.todo_items):
-            todo.raw_index = index
 
     @staticmethod
     def contexts(item):

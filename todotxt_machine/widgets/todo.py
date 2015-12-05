@@ -123,16 +123,6 @@ class TodoWidget(urwid.Button):
             return key
 
 
-class TodoProjectBox(urwid.WidgetDecoration, urwid.WidgetWrap):
-    def __init__(self, original_widget, project):
-        # TODO replace with rpoject header widget
-        project_widget = urwid.Text(('project', project))
-        pile = urwid.Pile([('flow', project_widget), original_widget], focus_item=1)
-
-        urwid.WidgetDecoration.__init__(self, original_widget)
-        urwid.WidgetWrap.__init__(self, pile)
-
-
 class TodoLineBox(urwid.WidgetDecoration, urwid.WidgetWrap):
     def __init__(self, original_widget, top_left_title="", bottom_right_title="", border_color='plain',
                  tlcorner=u'┌', tline=u'─', lline=u'│', trcorner=u'┐', blcorner=u'└', rline=u'│',
