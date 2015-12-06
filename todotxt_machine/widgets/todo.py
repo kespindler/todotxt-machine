@@ -103,7 +103,7 @@ class TodoWidget(urwid.Button):
             if self.parent_ui.filter_panel_is_open:
                 self.parent_ui.update_filters(new_contexts=self.todo.contexts, new_projects=self.todo.projects)
         else:
-            self.parent_ui.delete_todo(self.todo.raw_index)
+            self.parent_ui.delete_todo()
         self.parent_ui.save_todos()
         self.editing = False
 

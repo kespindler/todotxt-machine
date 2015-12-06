@@ -197,15 +197,14 @@ class Todos:
         self.parse_raw_entries(todo_items)
 
     def append(self, item, add_creation_date=True):
-        self.insert(len(self.todo_items), item, add_creation_date)
-        return len(self.todo_items)-1
+        return self.insert(len(self.todo_items), item, add_creation_date)
 
     def insert(self, index, item, add_creation_date=True):
         self.todo_items.insert(index, self.create_todo(item, index))
         newtodo = self.todo_items[index]
         if add_creation_date and newtodo.creation_date == "":
             newtodo.add_creation_date()
-        return index
+        return newtodo
 
     def __contains__(self, item):
         return item in self.todo_items
@@ -329,9 +328,6 @@ class Todos:
 
     def sorted_reverse(self):
         self.sorted(reversed_sort=True)
-
-    def sorted_raw(self):
-        self.todo_items.sort(key=lambda todo: todo.raw_index)
 
     def swap(self, first, second):
         """

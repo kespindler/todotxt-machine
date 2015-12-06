@@ -297,29 +297,34 @@ class UrwidUI(object):
             self.update_header()
 
     def add_new_todo(self, position=False):
+        projects = []
         if len(self.listbox.body) == 0:
             position = 'append'
         else:
-            focus_index = self.listbox.get_focus()[1]
+            widget, _ = self.listbox.get_focus()
+            if widget.todo.projects:
+                projects = list(widget.todo.projects)
+            try:
+                focus_index = self.todos.todo_items.index(widget.todo)
+            except (AttributeError, ValueError):
+                position = 'append'
 
         if self.filtering:
             position = 'append'
 
         if position == 'append':
-            new_index = self.todos.append('', add_creation_date=False)
-        else:
-            if position == 'insert_after':
-                new_index = self.todos.insert(focus_index + 1, '', add_creation_date=False)
-            elif position == 'insert_before':
-                new_index = self.todos.insert(focus_index, '', add_creation_date=False)
+            newtodo = self.todos.append('', add_creation_date=False)
+        elif position == 'insert_after':
+            newtodo = self.todos.insert(focus_index + 1, '', add_creation_date=False)
+        else:  # position == 'insert_before':
+            newtodo = self.todos.insert(focus_index, '', add_creation_date=False)
+        if projects:
+            newtodo.projects = projects
+            newtodo.raw = newtodo.build_raw()
 
         self.refresh()
-        if position:
-            if self.filtering:
-                self.listbox.set_focus(len(self.listbox.body)-1)
-            else:
-                self.listbox.set_focus(new_index)
-            self.update_header()
+        self.focus_todo(newtodo, edit=True)
+        self.update_header()
 
     def create_header(self, message=""):
         total = 0
@@ -543,9 +548,14 @@ class UrwidUI(object):
         self.run_sort()
         self.redraw_list()
         if todo:
-            for i, widget in enumerate(self.listbox.body):
-                if isinstance(widget, TodoWidget) and widget.todo == todo.todo:
-                    self.listbox.set_focus(i)
+            self.focus_todo(todo.todo)
+
+    def focus_todo(self, todo, edit=False):
+        for i, widget in enumerate(self.listbox.body):
+            if isinstance(widget, TodoWidget) and widget.todo == todo:
+                self.listbox.set_focus(i)
+                if edit:
+                    widget.edit_item()
 
     def reload_todos_from_memory(self):
         self.displayed_todos = self.todos.todo_items
