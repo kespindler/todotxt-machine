@@ -66,7 +66,8 @@ class TodoWidget(urwid.Button):
                 project = self.todo.projects[0]
                 depth = project.count('.')
                 colored_list = self.todo.highlight(show_projects=False)
-                colored_list[1][0] = u'    ' * (depth+1) + colored_list[1][0]
+                if isinstance(colored_list[1][0], basestring):
+                    colored_list[1][0] = u'    ' * (depth+1) + colored_list[1][0]
                 text = urwid.Text(colored_list, wrap=self.wrapping)
         self._w = urwid.AttrMap(urwid.AttrMap(text, None, 'selected'),
                                 None, self.colorscheme.focus_map)
@@ -185,4 +186,3 @@ class TodoLineBox(urwid.WidgetDecoration, urwid.WidgetWrap):
 
         urwid.WidgetDecoration.__init__(self, original_widget)
         urwid.WidgetWrap.__init__(self, pile)
-

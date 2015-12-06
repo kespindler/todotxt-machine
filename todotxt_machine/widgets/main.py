@@ -5,7 +5,7 @@ import subprocess as sub
 from todotxt_machine.widgets.todo import TodoWidget
 from todotxt_machine.widgets.util import handle_keypress, log
 from todotxt_machine.widgets.search import SearchWidget
-from todotxt_machine.widgets.vi import ViListBox, ViColumns, ViPile
+from todotxt_machine.widgets.vi import ViListBox, ViColumns, ViPile, ViCheckbox
 
 
 class UrwidUI(object):
@@ -99,7 +99,6 @@ class UrwidUI(object):
         self.listbox = None
         self.search_box = None
 
-        self.filter_results = []
         self.finalized_search_string = None
 
     def visible_lines(self):
@@ -168,13 +167,8 @@ class UrwidUI(object):
             self.todos.sorted(key=sort['key'])
 
     def toggle_sorting(self, button=None):
-        self.delete_todo_widgets()
-
         self.sort_order = (self.sort_order + 1) % len(self.sort_options)
-        self.run_sort()
-
-        self.reload_todos_from_memory()
-        self.move_selection(0)
+        self.refresh()
         self.update_header()
         if self.searching:
             self.run_search(self.finalized_search_string)
@@ -193,8 +187,7 @@ class UrwidUI(object):
 
     def toggle_wrapping(self, checkbox=None, state=None):
         self.wrap_style = (self.wrap_style + 1) % len(self.wrap_options)
-        self.delete_todo_widgets()
-        self.draw_list()
+        self.redraw_list()
         self.update_header()
 
     def project_widget_clicked(self):
@@ -202,8 +195,7 @@ class UrwidUI(object):
 
     def toggle_border(self, checkbox=None, state=None):
         self.display_style = (self.display_style + 1) % len(self.display_options)
-        self.delete_todo_widgets()
-        self.draw_list()
+        self.redraw_list()
         self.update_header()
 
     def toggle_toolbar(self):
@@ -298,8 +290,8 @@ class UrwidUI(object):
             del self.listbox.body[display_index]
             if self.is_filtering():
                 try:
-                    filtered_index = self.filter_results.index(item)
-                    del self.filter_results[filtered_index]
+                    filtered_index = self.displayed_todos.index(item)
+                    del self.displayed_todos[filtered_index]
                 except ValueError:
                     pass
             self.update_header()
@@ -313,20 +305,15 @@ class UrwidUI(object):
         if self.filtering:
             position = 'append'
 
-        wrap = self.wrap_options[self.wrap_style]['display']
-        border = self.display_options[self.display_style]['display']
         if position == 'append':
             new_index = self.todos.append('', add_creation_date=False)
-            self.listbox.body.append(TodoWidget(self.todos[new_index], self.key_bindings, self.colorscheme, self,
-                                                editing=True, wrapping=wrap, border=border))
         else:
             if position == 'insert_after':
-                new_index = self.todos.insert(focus_index+1, '', add_creation_date=False)
+                new_index = self.todos.insert(focus_index + 1, '', add_creation_date=False)
             elif position == 'insert_before':
                 new_index = self.todos.insert(focus_index, '', add_creation_date=False)
-            self.listbox.body.insert(new_index, TodoWidget(self.todos[new_index], self.key_bindings, self.colorscheme, self,
-                                                           editing=True, wrapping=wrap, border=border))
 
+        self.refresh()
         if position:
             if self.filtering:
                 self.listbox.set_focus(len(self.listbox.body)-1)
@@ -413,7 +400,6 @@ class UrwidUI(object):
 
     def clear_filters(self, refresh=True, button=None):
         self.filtering = False
-        self.filter_results = []
         self.active_projects = []
         self.active_contexts = []
         if refresh:
@@ -422,7 +408,6 @@ class UrwidUI(object):
     def clear_searches(self, refresh=True, button=None):
         self.searching = False
         self.search_string = ''
-        self.filter_results = []
         if refresh:
             self.redraw_widgets()
 
@@ -500,36 +485,28 @@ class UrwidUI(object):
                     left=1, right=1, min_width=10), title='Key Bindings'), 'default')
 
     def create_filter_panel(self):
-        w = urwid.AttrMap(
-            urwid.Padding(
-                urwid.ListBox(
-                    [
-                        ViPile(
-                            self.key_bindings,
-                            [urwid.Text('Contexts & Projects', align='center')] +
-                            [urwid.Divider(u'─')] +
-                            [urwid.AttrWrap(urwid.CheckBox(c, state=(c in self.active_contexts), on_state_change=self.checkbox_clicked, user_data=['context', c]), 'context_dialog_color', 'context_selected') for c in self.todos.all_contexts()] +
-                            [urwid.Divider(u'─')] +
-                            [urwid.AttrWrap(urwid.CheckBox(p, state=(p in self.active_projects), on_state_change=self.checkbox_clicked, user_data=['project', p]), 'project_dialog_color', 'project_selected') for p in self.todos.all_projects()] +
-                            [urwid.Divider(u'─')] +
-                            [urwid.AttrMap(urwid.Button(['Clear ', ('header_file_dialog_color','F'), 'ilters'], on_press=self.clear_filters), 'dialog_color', 'plain_selected') ]
-                        )
-                    ] +
-                    [urwid.Divider()],
-                    ),
-                left=1, right=1, min_width=10)
-            ,
-            'dialog_color')
+        box = ViPile(
+            self.key_bindings,
+            [urwid.Text('Contexts & Projects', align='center')] +
+            [urwid.Divider(u'─')] +
+            [urwid.AttrWrap(ViCheckbox(c, state=(c in self.active_contexts), on_state_change=self.checkbox_clicked, user_data=['context', c]), 'context_dialog_color', 'context_selected') for c in self.todos.all_contexts()] +
+            [urwid.Divider(u'─')] +
+            [urwid.AttrWrap(ViCheckbox(p, state=(p in self.active_projects), on_state_change=self.checkbox_clicked, user_data=['project', p]), 'project_dialog_color', 'project_selected') for p in self.todos.all_projects()] +
+            [urwid.Divider(u'─')] +
+            [urwid.AttrMap(urwid.Button(['Clear ', ('header_file_dialog_color','F'), 'ilters'], on_press=self.clear_filters), 'dialog_color', 'plain_selected') ]
+        )
+        box = urwid.ListBox([box] + [urwid.Divider()])
+        w = urwid.AttrMap(urwid.Padding(box, left=1, right=1, min_width=10), 'dialog_color')
 
-        bg = urwid.AttrWrap(urwid.SolidFill(u" "), 'dialog_background') # u"\u2592"
+        bg = urwid.AttrWrap(urwid.SolidFill(u" "), 'dialog_background')  # u"\u2592"
         shadow = urwid.AttrWrap(urwid.SolidFill(u" "), 'dialog_shadow')
 
         bg = urwid.Overlay(shadow, bg,
-                            ('fixed left', 2), ('fixed right', 1),
-                            ('fixed top', 2), ('fixed bottom', 1))
+                           ('fixed left', 2), ('fixed right', 1),
+                           ('fixed top', 2), ('fixed bottom', 1))
         w = urwid.Overlay(w, bg,
-                           ('fixed left', 1), ('fixed right', 2),
-                           ('fixed top', 1), ('fixed bottom', 2))
+                          ('fixed left', 1), ('fixed right', 2),
+                          ('fixed top', 1), ('fixed bottom', 2))
         return w
 
     def delete_todo_widgets(self):
@@ -554,15 +531,21 @@ class UrwidUI(object):
                                                 wrapping=wrap,
                                                 border=border))
 
-    def refresh(self):
-        todo, index = self.listbox.get_focus()
-        self.displayed_todos = self.todos.todo_items
-        self.run_sort()
+    def redraw_list(self):
         self.delete_todo_widgets()
         self.draw_list()
-        for i, widget in enumerate(self.listbox.body):
-            if isinstance(widget, TodoWidget) and widget.todo == todo.todo:
-                self.listbox.set_focus(i)
+
+    def refresh(self, reset=True):
+        todo, index = self.listbox.get_focus()
+
+        if reset:
+            self.displayed_todos = self.todos.todo_items
+        self.run_sort()
+        self.redraw_list()
+        if todo:
+            for i, widget in enumerate(self.listbox.body):
+                if isinstance(widget, TodoWidget) and widget.todo == todo.todo:
+                    self.listbox.set_focus(i)
 
     def reload_todos_from_memory(self):
         self.displayed_todos = self.todos.todo_items
@@ -619,8 +602,7 @@ class UrwidUI(object):
         urwid.set_encoding('UTF-8')
 
         self.listbox = ViListBox(self.key_bindings, urwid.SimpleListWalker([]))
-        self.reload_todos_from_memory()
-        self.run_sort()
+        self.refresh()
         self.header = self.create_header()
         self.footer = self.create_footer()
 
