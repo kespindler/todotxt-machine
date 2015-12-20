@@ -401,7 +401,8 @@ class UrwidUI(object):
         self.frame.set_focus('body')
         self.update_header()
         for widget in self.listbox.body:
-            widget.update_todo()
+            if hasattr(widget, 'update_todo'):
+                widget.update_todo()
 
     def clear_filters(self, refresh=True, button=None):
         self.filtering = False
